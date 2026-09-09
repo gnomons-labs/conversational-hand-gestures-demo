@@ -2,6 +2,8 @@
 
 *An inclusive, offline hand-gesture "communication bridge" for children, running two AI workloads on a single microcontroller under µT-Kernel 3.0*
 
+🔗 [Introduction page](https://www.gnomons.com/conversational-hand-gestures-demo/)
+
 ## Overview
 - Conversational Hand Gestures is an interactive demo built for children and anyone who communicates better without voice or touch: a child raises an open palm, a cartoon face on screen greets them, and the two hold a short conversation, a game, a story, and a goodbye — all through five hand shapes.
 - The TRON × AI theme here is combining an RTOS and AI rather than running one alongside the other. On µT-Kernel 3.0, two independent AI workloads — computer vision and language generation — share a single Renesas RA8P1 chip through the kernel's own scheduling and memory primitives, so a slow language model can never stall a live camera pipeline.
