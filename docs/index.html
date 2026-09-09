@@ -1,0 +1,602 @@
+<title>Conversational Hand Gestures</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --paper:#ffffff;
+  --panel:#f8fafc;      /* slate-50 */
+  --ink:#0f172a;        /* slate-900 */
+  --ink-soft:#475569;   /* slate-600 */
+  --ink-mute:#64748b;   /* slate-500 */
+  --ink-faint:#94a3b8;  /* slate-400 */
+  --line:#e2e8f0;       /* slate-200 */
+  --line-soft:#f1f5f9;  /* slate-100 */
+  --brand:#16a34a;      /* green-600 */
+  --brand-dark:#15803d; /* green-700 */
+  --brand-darker:#166534;/* green-800 */
+  --brand-soft:#dcfce7; /* green-100 */
+  --brand-tint:#f0fdf4; /* green-50 */
+  --brand-line:#bbf7d0; /* green-200 */
+  --accent:#0ea5e9;     /* sky-500, language-model lane */
+  --accent-dark:#0369a1;/* sky-700 */
+  --accent-soft:#e0f2fe;/* sky-100 */
+  --accent-tint:#f0f9ff;/* sky-50 */
+  --accent-line:#bae6fd;/* sky-200 */
+  --shadow: 0 1px 2px rgba(15,23,42,0.04), 0 8px 20px -10px rgba(15,23,42,0.10);
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height:1.6;
+}
+::selection{ background:var(--brand-soft); color:var(--brand-darker); }
+a{ color:inherit; }
+
+.wrap{ max-width:1040px; margin:0 auto; padding:0 24px; }
+
+/* Back link */
+.back{
+  display:flex; align-items:center; gap:6px;
+  font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--ink-mute);
+  text-decoration:none; padding:22px 0 0;
+}
+.back:hover{ color:var(--brand-dark); }
+
+/* Hero */
+.hero{
+  display:grid; grid-template-columns:1.15fr 0.85fr; gap:44px;
+  align-items:center; padding:40px 0 56px;
+  border-bottom:1px solid var(--line-soft);
+}
+@media (max-width:760px){ .hero{ grid-template-columns:1fr; } }
+.eyebrow{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:600;
+  letter-spacing:0.06em; text-transform:uppercase; color:var(--brand-dark);
+  background:var(--brand-tint); border:1px solid var(--brand-line);
+  border-radius:99px; padding:5px 12px 5px 10px; margin-bottom:18px;
+}
+.eyebrow .dot{ width:7px; height:7px; border-radius:99px; background:var(--brand); }
+h1{
+  font-family:'Inter', sans-serif; font-weight:800; letter-spacing:-0.02em;
+  font-size:clamp(32px,4.6vw,48px); line-height:1.1; margin:0 0 18px;
+  color:var(--ink); text-wrap:balance;
+}
+.hero p{ font-size:17px; color:var(--ink-soft); margin:0; line-height:1.65; }
+
+.diagram-box{
+  background:var(--paper); border:1px solid var(--line); border-radius:10px;
+  box-shadow:var(--shadow); padding:20px 18px 16px;
+}
+.diagram-box svg{ width:100%; height:auto; display:block; }
+.diagram-cap{
+  font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--ink-mute);
+  text-align:center; margin-top:10px; letter-spacing:0.01em;
+}
+
+/* Video embed */
+.video-wrap{
+  position:relative; width:100%; padding-bottom:56.25%; height:0;
+  border-radius:10px; overflow:hidden; border:1px solid var(--line);
+  box-shadow:var(--shadow); margin-top:22px; background:var(--panel);
+}
+.video-wrap iframe{ position:absolute; top:0; left:0; width:100%; height:100%; border:0; }
+
+/* section rhythm */
+section{ padding:52px 0; border-bottom:1px solid var(--line-soft); }
+section:last-of-type{ border-bottom:none; }
+.section-label{
+  font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:600;
+  letter-spacing:0.08em; text-transform:uppercase; color:var(--brand-dark);
+  margin-bottom:8px;
+}
+h2{
+  font-family:'Inter', sans-serif; font-weight:700; letter-spacing:-0.01em;
+  font-size:27px; margin:0 0 16px; text-wrap:balance; color:var(--ink);
+}
+.lede{ font-size:15.5px; color:var(--ink-soft); margin:0 0 8px; }
+code{ font-family:'JetBrains Mono', monospace; font-size:0.92em; background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:1px 5px; color:var(--ink); }
+
+/* Intro copy (flowing prose, no card) */
+.intro-copy{ font-size:16px; color:var(--ink-soft); line-height:1.7; margin:22px 0 0; }
+.intro-copy strong{ color:var(--brand-darker); }
+
+/* Task priority rows */
+.task-list{ display:flex; flex-direction:column; border:1px solid var(--line); border-radius:10px; overflow:hidden; box-shadow:var(--shadow); }
+.task-row{
+  display:grid; grid-template-columns:150px 1fr auto; gap:16px; align-items:center;
+  padding:16px 20px; border-bottom:1px solid var(--line-soft); background:var(--paper);
+}
+.task-row:last-child{ border-bottom:none; }
+.task-row.lowest{ background:var(--panel); }
+.task-name{ font-family:'JetBrains Mono', monospace; font-weight:700; font-size:13.5px; color:var(--ink); }
+.task-name .sub{ display:block; font-weight:400; color:var(--ink-mute); font-size:11.5px; margin-top:2px; }
+.task-desc{ font-size:13.5px; color:var(--ink-soft); }
+.task-pill{
+  font-family:'JetBrains Mono', monospace; font-size:10.5px; font-weight:600;
+  letter-spacing:0.03em; padding:4px 10px; border-radius:99px; white-space:nowrap;
+  background:var(--brand-soft); color:var(--brand-darker);
+}
+.task-row.lowest .task-pill{ background:var(--line-soft); color:var(--ink-mute); }
+
+/* Capability / signal cards */
+.cards{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+@media (max-width:680px){ .cards{ grid-template-columns:1fr; } }
+.card{
+  background:var(--paper); border:1px solid var(--line); border-radius:10px;
+  padding:24px 24px 22px; box-shadow:var(--shadow);
+  display:flex; flex-direction:column; gap:11px; position:relative;
+  transition:border-color .15s ease;
+}
+.card:hover{ border-color:var(--brand-line); }
+.card h3{
+  font-family:'Inter', sans-serif; font-weight:700; font-size:18px; margin:0;
+  line-height:1.32; color:var(--ink);
+}
+.card p{ font-size:14px; color:var(--ink-soft); margin:0; }
+.card .tech-note{
+  font-family:'JetBrains Mono', monospace; font-size:11.5px;
+  color:var(--ink-mute); line-height:1.5;
+}
+.badge{
+  position:absolute; top:22px; right:22px;
+  font-family:'JetBrains Mono', monospace; font-size:10.5px; font-weight:600;
+  letter-spacing:0.03em; padding:3px 9px; border-radius:99px;
+  background:var(--brand-soft); color:var(--brand-darker);
+}
+
+/* Gesture chips */
+.chips{ display:flex; flex-wrap:nowrap; gap:6px; }
+.chip{
+  font-family:'JetBrains Mono', monospace; font-weight:500;
+  font-size:12px; padding:7px 9px; border-radius:8px;
+  background:var(--brand-tint); color:var(--brand-darker);
+  border:1px solid var(--brand-line);
+  display:flex; align-items:center; gap:5px;
+  white-space:nowrap;
+}
+@media (max-width:680px){
+  .chips{ flex-wrap:wrap; }
+  .chip{ white-space:normal; }
+}
+.chip .used-for{ color:var(--ink-mute); font-weight:400; }
+.chip-emoji{ font-size:15px; line-height:1; }
+
+/* Architecture diagram */
+.arch-wrap{
+  background:var(--paper); border:1px solid var(--line); border-radius:10px;
+  padding:18px 18px 6px; box-shadow:var(--shadow); overflow-x:auto; margin:0;
+}
+.arch-wrap svg{ width:100%; height:auto; display:block; min-width:720px; }
+.arch-wrap figcaption{
+  font-size:12.5px; color:var(--ink-mute); padding:10px 4px 14px;
+}
+.diagram-legend{ display:flex; flex-wrap:wrap; gap:8px 20px; padding:0 4px 16px; }
+.legend-item{
+  display:flex; align-items:center; gap:7px;
+  font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--ink-mute);
+}
+.legend-swatch{ width:12px; height:12px; border-radius:3px; flex-shrink:0; border:1.3px solid; }
+.legend-swatch.vision{ background:var(--brand-soft); border-color:var(--brand); }
+.legend-swatch.lang{ background:var(--accent-soft); border-color:var(--accent); }
+.legend-swatch.kernel{ background:var(--brand-tint); border-color:var(--brand); border-style:dashed; }
+.legend-swatch.ui{ background:var(--panel); border-color:var(--ink-faint); }
+.legend-swatch.hw{ background:var(--panel); border-color:var(--line); }
+.band{ fill:none; stroke:var(--line); stroke-width:1.2; }
+.band-label{
+  font-family:'JetBrains Mono', monospace; font-size:9.5px; font-weight:600;
+  letter-spacing:0.06em; fill:var(--ink-mute); text-transform:uppercase;
+}
+.blk-vision{ fill:var(--brand-soft); stroke:var(--brand); stroke-width:1.3; }
+.blk-lang{ fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.3; }
+.blk-hw{ fill:var(--panel); stroke:var(--line); stroke-width:1.2; }
+.blk-title{
+  font-family:'Inter', sans-serif; font-weight:700;
+  font-size:12px; fill:var(--ink); text-anchor:middle;
+}
+.blk-title-hw{
+  font-family:'JetBrains Mono', monospace; font-weight:600; font-size:10px;
+  fill:var(--ink); text-anchor:middle; letter-spacing:0.01em;
+}
+.blk-sub{ font-family:'Inter', sans-serif; font-size:8.7px; fill:var(--ink-mute); text-anchor:middle; }
+.flow{ fill:none; stroke:#94a3b8; stroke-width:1.3; }
+.gate-fill{ fill:var(--brand-tint); stroke:var(--brand); stroke-width:1.4; stroke-dasharray:5 3; }
+.gate-label{
+  font-family:'JetBrains Mono', monospace; font-size:9.5px; font-weight:600;
+  letter-spacing:0.05em; fill:var(--brand-darker); text-anchor:middle; text-transform:uppercase;
+}
+.gate-sub{ font-family:'Inter', sans-serif; font-size:9px; fill:var(--brand-darker); text-anchor:middle; opacity:0.85; }
+.ui-fill{ fill:var(--panel); stroke:var(--ink-faint); stroke-width:1.2; }
+.ui-label{ font-family:'Inter', sans-serif; font-weight:700; font-size:12px; fill:var(--ink); text-anchor:middle; }
+.ui-sub{ font-family:'JetBrains Mono', monospace; font-size:9px; fill:var(--ink-mute); text-anchor:middle; }
+
+/* Memory footprint stat strip */
+.stat-strip{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:20px; }
+@media (max-width:680px){ .stat-strip{ grid-template-columns:1fr; } }
+.stat-tile{
+  background:var(--brand-tint); border:1px solid var(--brand-line); border-radius:10px;
+  padding:18px 20px; text-align:center;
+}
+.stat-num{
+  font-family:'JetBrains Mono', monospace; font-weight:700; font-size:26px;
+  color:var(--brand-darker); letter-spacing:-0.01em; margin-bottom:6px;
+}
+.stat-label{ font-size:12.5px; color:var(--ink-soft); line-height:1.4; }
+
+</style>
+
+<div class="wrap">
+  <a class="back" href="https://www.gnomons.com/">&larr; gnomons.com</a>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>Featured R&amp;D &middot; Renesas RA8P1 &middot; &micro;T-Kernel 3.0</div>
+      <h1>Conversational Hand Gestures</h1>
+      <p>
+        An inclusive communication bridge for children: a child raises
+        an open palm, a cartoon face on screen greets them, and the two
+        hold a short conversation, a game, a story, a goodbye &mdash;
+        using only hand shapes. No network stack, no camera data ever
+        leaves the device, so the conversation stays private to the
+        child using it.
+      </p>
+    </div>
+    <div class="diagram-box">
+      <svg viewBox="0 0 300 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An open hand gesture on the left leads to a responding face on the right.">
+        <rect x="20" y="38" width="96" height="104" rx="10" fill="var(--brand-tint)" stroke="var(--brand)" stroke-width="1.4"/>
+        <text x="68" y="32" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="var(--brand-darker)" letter-spacing="0.5">HAND GESTURE</text>
+        <g transform="translate(68,90)">
+          <path d="M-14,10 L-14,-8 a4,4 0 0 1 8,0 v6 M-6,-14 a4,4 0 0 1 8,0 v10 M2,-13 a4,4 0 0 1 8,0 v11 M10,-8 a4,4 0 0 1 8,0 v14 a12,12 0 0 1 -12,12 h-4 a12,12 0 0 1 -12,-12 v-6"
+                fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        <rect x="184" y="38" width="96" height="104" rx="10" fill="var(--panel)" stroke="var(--line)" stroke-width="1.4"/>
+        <text x="232" y="32" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-mute)" letter-spacing="0.3">RESPONSE</text>
+        <circle cx="232" cy="90" r="30" fill="#ffffff" stroke="var(--brand)" stroke-width="1.6"/>
+        <circle cx="222" cy="84" r="3.2" fill="var(--brand)"/>
+        <circle cx="242" cy="84" r="3.2" fill="var(--brand)"/>
+        <path d="M218 98 q14 12 28 0" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M130 84 L170 84" stroke="var(--brand)" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M170 84 L166 81 L166 87 Z" fill="var(--brand)"/>
+      </svg>
+      <div class="diagram-cap">a gesture in &middot; a reaction back &middot; on screen, right away</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-label">Demo</div>
+    <h2>Watch it in action</h2>
+    <p class="lede">
+      The conversation, the rock-paper-scissors game, and the story
+      generation, all running live on the EK-RA8P1 board.
+    </p>
+    <div class="video-wrap">
+      <iframe
+        src="https://www.youtube-nocookie.com/embed/WknkOvDKUaU"
+        title="Conversational Hand Gestures Demo"
+        loading="lazy"
+        frameborder="0"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen></iframe>
+    </div>
+  </section>
+
+  <p class="intro-copy">
+    The exchange is meant to mimic <strong>conversational
+    reciprocity</strong> &mdash; the back-and-forth turn-taking of a
+    real conversation &mdash; rather than a single command triggering
+    a single response, with the animated face appearing to
+    understand and talk back through its reactions.
+  </p>
+  <p class="intro-copy">
+    The TRON &times; AI theme is about combining RTOS and AI rather
+    than running one alongside the other. On &micro;T-Kernel 3.0,
+    this demo does exactly that: two independent AI workloads,
+    computer vision and language generation, share a single Renesas
+    RA8P1 chip through the kernel's own scheduling and memory
+    primitives.
+  </p>
+
+  <section>
+    <div class="section-label">The Challenge</div>
+    <h2>Competing for CPU time and limited memory</h2>
+    <p class="lede">
+      On a single microcontroller, combining two AI workloads is
+      <strong>not automatic</strong>. AI workloads are large relative
+      to an MCU's compute and memory budget, and running more than one
+      at once &mdash; for example a vision pipeline that must keep up
+      with a live camera while a language model computes in the
+      background &mdash; puts them in direct competition for CPU time
+      and for the limited fast memory an AI accelerator needs. Without
+      guaranteed task order, a slower AI workload can stall a
+      time-critical one.
+    </p>
+  </section>
+
+  <section>
+    <div class="section-label">System architecture</div>
+    <h2>Two AI workloads, one chip</h2>
+    <p class="lede">
+      The vision half feeds an MIPI camera into a palm-detection model
+      and a hand-landmark model, both running on the on-chip
+      Ethos-U55 NPU; the resulting 21 joint positions become one of
+      five named gestures through geometry ratio tests on the
+      Cortex-M85. The language half runs a "Tiny" Llama2 model at
+      8-bit quantization that writes a short story one token at a
+      time, reading its weights directly out of external Octo-SPI
+      flash instead of copying them into RAM, with its int8 matrix
+      multiplication calling the Cortex-M85's Helium vector
+      instructions directly &mdash; sixteen int8 lanes per instruction
+      instead of one.
+    </p>
+    <figure class="arch-wrap" style="margin-top:22px;">
+      <svg viewBox="0 0 860 604" xmlns="http://www.w3.org/2000/svg"
+           role="img" aria-label="Vision task chain on the left and language task chain on the right both signal through one shared event flag, into the UI conversation state machine, both resting on RA8P1 hardware: Ethos-U55 NPU, Cortex-M85 with Helium, Octo-SPI flash, and SDRAM.">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5"
+                  markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Vision lane -->
+        <rect class="band" x="16" y="16" width="380" height="326" rx="10"/>
+        <text class="band-label" x="30" y="34">Vision &middot; T_CAM / T_AI</text>
+
+        <rect class="blk-vision" x="32" y="46" width="348" height="50" rx="8"/>
+        <text class="blk-title" x="206" y="67">MIPI Camera</text>
+        <text class="blk-sub" x="206" y="83">OV5640, 640&times;480</text>
+        <line class="flow" x1="206" y1="96" x2="206" y2="112" marker-end="url(#arrow)"/>
+
+        <rect class="blk-vision" x="32" y="114" width="348" height="52" rx="8"/>
+        <text class="blk-title" x="206" y="136">Palm Detection</text>
+        <text class="blk-sub" x="206" y="152">Ethos-U55 NPU</text>
+        <line class="flow" x1="206" y1="166" x2="206" y2="182" marker-end="url(#arrow)"/>
+
+        <rect class="blk-vision" x="32" y="184" width="348" height="52" rx="8"/>
+        <text class="blk-title" x="206" y="206">Hand Landmark</text>
+        <text class="blk-sub" x="206" y="222">Ethos-U55 NPU &middot; 21 joints</text>
+        <line class="flow" x1="206" y1="236" x2="206" y2="252" marker-end="url(#arrow)"/>
+
+        <rect class="blk-vision" x="32" y="254" width="348" height="56" rx="8"/>
+        <text class="blk-title" x="206" y="277">Gesture Geometry</text>
+        <text class="blk-sub" x="206" y="293">Cortex-M85 &middot; ratio tests &middot; 5 shapes</text>
+
+        <!-- Language lane -->
+        <rect class="band" x="412" y="16" width="380" height="326" rx="10"/>
+        <text class="band-label" x="426" y="34">Language &middot; T_STORY</text>
+
+        <rect class="blk-lang" x="428" y="46" width="348" height="50" rx="8"/>
+        <text class="blk-title" x="602" y="67">Tiny Llama2</text>
+        <text class="blk-sub" x="602" y="83">Cortex-M85 + Helium MVE</text>
+        <line class="flow" x1="602" y1="96" x2="602" y2="112" marker-end="url(#arrow)"/>
+
+        <rect class="blk-lang" x="428" y="114" width="348" height="52" rx="8"/>
+        <text class="blk-title" x="602" y="136">int8 Matrix Multiply</text>
+        <text class="blk-sub" x="602" y="152">16 int8 lanes per instruction</text>
+        <line class="flow" x1="602" y1="166" x2="602" y2="182" marker-end="url(#arrow)"/>
+
+        <rect class="blk-lang" x="428" y="184" width="348" height="52" rx="8"/>
+        <text class="blk-title" x="602" y="206">Weights Read In Place</text>
+        <text class="blk-sub" x="602" y="222">Octo-SPI flash &middot; never copied to RAM</text>
+        <line class="flow" x1="602" y1="236" x2="602" y2="252" marker-end="url(#arrow)"/>
+
+        <rect class="blk-lang" x="428" y="254" width="348" height="56" rx="8"/>
+        <text class="blk-title" x="602" y="277">Token Stream</text>
+        <text class="blk-sub" x="602" y="293">one token at a time</text>
+
+        <!-- Converging flows into the event flag gate -->
+        <line class="flow" x1="206" y1="310" x2="206" y2="358" />
+        <line class="flow" x1="602" y1="310" x2="602" y2="358" />
+
+        <rect class="gate-fill" x="16" y="360" width="776" height="58" rx="8"/>
+        <text class="gate-label" x="404" y="382">Single &micro;T-Kernel Event Flag</text>
+        <text class="gate-sub" x="404" y="400">ready / done bits only &middot; interrupts set bits directly &middot; nothing to overflow</text>
+
+        <line class="flow" x1="404" y1="418" x2="404" y2="434" marker-end="url(#arrow)"/>
+
+        <rect class="ui-fill" x="246" y="436" width="368" height="52" rx="8"/>
+        <text class="ui-label" x="430" y="458">T_UI &mdash; Conversation State Machine</text>
+        <text class="ui-sub" x="430" y="474">renders the whole screen</text>
+
+        <line class="flow" x1="430" y1="488" x2="430" y2="504" marker-end="url(#arrow)"/>
+
+        <!-- Hardware band -->
+        <rect class="band" x="16" y="506" width="828" height="82" rx="10"/>
+        <text class="band-label" x="30" y="524">Renesas RA8P1</text>
+
+        <rect class="blk-hw" x="32" y="532" width="190" height="44" rx="6"/>
+        <text class="blk-title-hw" x="127" y="558">ETHOS-U55 NPU</text>
+
+        <rect class="blk-hw" x="234" y="532" width="190" height="44" rx="6"/>
+        <text class="blk-title-hw" x="329" y="558">CORTEX-M85 + HELIUM</text>
+
+        <rect class="blk-hw" x="436" y="532" width="190" height="44" rx="6"/>
+        <text class="blk-title-hw" x="531" y="558">OCTO-SPI FLASH</text>
+
+        <rect class="blk-hw" x="638" y="532" width="190" height="44" rx="6"/>
+        <text class="blk-title-hw" x="733" y="558">SDRAM</text>
+      </svg>
+      <figcaption>
+        Both task chains signal through the same event flag; everything
+        else &mdash; processed images, joint positions, gesture
+        results, story text &mdash; travels in shared structures each
+        written by exactly one task.
+      </figcaption>
+      <div class="diagram-legend">
+        <span class="legend-item"><span class="legend-swatch vision"></span>Vision task</span>
+        <span class="legend-item"><span class="legend-swatch lang"></span>Language task</span>
+        <span class="legend-item"><span class="legend-swatch ui"></span>UI task</span>
+        <span class="legend-item"><span class="legend-swatch kernel"></span>&micro;T-Kernel resource (OS)</span>
+        <span class="legend-item"><span class="legend-swatch hw"></span>RA8P1 hardware</span>
+      </div>
+    </figure>
+    <div class="stat-strip">
+      <div class="stat-tile">
+        <div class="stat-num">17.1 MB</div>
+        <div class="stat-label">story weights read straight from Octo-SPI flash, never copied to RAM</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-num">1.2 MB</div>
+        <div class="stat-label">on-chip SRAM used, of 1.9 MB fitted &mdash; shared by both NPU models</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-num">71%</div>
+        <div class="stat-label">of external SDRAM still free after both AI workloads are loaded</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Scheduling</div>
+    <h2>Fixed priorities keep vision responsive</h2>
+    <p class="lede">
+      &micro;T-Kernel's fixed task priorities let these two workloads
+      share one chip safely, as four application tasks. Story
+      generation only uses CPU time left over after the other three,
+      so it cannot delay the camera or the display: the camera picture
+      keeps updating and story text keeps appearing together, with no
+      dropped frames on the panel.
+    </p>
+    <div class="task-list" style="margin-top:22px;">
+      <div class="task-row">
+        <div class="task-name">T_CAM<span class="sub">camera capture</span></div>
+        <div class="task-desc">Captures each camera frame and hands it to the vision pipeline. Highest priority so the live picture never stalls.</div>
+        <div class="task-pill">HIGHEST</div>
+      </div>
+      <div class="task-row">
+        <div class="task-name">T_AI<span class="sub">AI inference</span></div>
+        <div class="task-desc">Runs palm detection and hand-landmark inference on the NPU, then the gesture geometry on the Cortex-M85.</div>
+        <div class="task-pill">HIGH</div>
+      </div>
+      <div class="task-row">
+        <div class="task-name">T_UI<span class="sub">UI &amp; conversation</span></div>
+        <div class="task-desc">Owns the conversation state machine and draws the whole screen &mdash; camera picture, face, game, and story text.</div>
+        <div class="task-pill">MEDIUM</div>
+      </div>
+      <div class="task-row lowest">
+        <div class="task-name">T_STORY<span class="sub">story generation</span></div>
+        <div class="task-desc">Generates story text one token at a time, using only whatever CPU time the other three tasks leave behind.</div>
+        <div class="task-pill">LOWEST</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Real-Time Behavior</div>
+    <h2>Competitive speed, without freezing the screen</h2>
+    <p class="lede">
+      The same benchmark other microcontrollers run alone &mdash;
+      llama2.c's <code>stories15M</code>, 8-bit quantized &mdash;
+      runs here at a comparable rate while also driving a live camera
+      and two NPU vision models at once.
+    </p>
+    <div class="stat-strip">
+      <div class="stat-tile">
+        <div class="stat-num">2.61 tok/s</div>
+        <div class="stat-label">story rate, camera and screen running too &mdash; on par with single-purpose boards running the same model alone</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-num">111 ms</div>
+        <div class="stat-label">CPU time per token spent on the camera and screen, so the display stays live</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-num">Never freezes</div>
+        <div class="stat-label">the panel keeps drawing live camera and story text throughout generation</div>
+      </div>
+    </div>
+    <p class="tech-note" style="margin-top:16px;">
+      For comparison, published microcontroller runs of the same
+      <code>stories15M</code> language model alone &mdash; with no
+      camera or vision workload alongside it &mdash; report about
+      2.5 tokens/s on a Cortex-M7 and about 2.96 tokens/s on an
+      ESP32-S3.
+    </p>
+  </section>
+
+  <section>
+    <div class="section-label">Signaling</div>
+    <h2>One event flag, single-writer memory</h2>
+    <p class="lede">
+      The same four tasks coordinate through a single &micro;T-Kernel
+      event flag plus shared, single-writer memory &mdash; a
+      signaling path small enough that its worst-case timing is easy
+      to reason about.
+    </p>
+    <div class="cards" style="margin-top:22px;">
+      <div class="card">
+        <h3>The event flag carries signals, not data</h3>
+        <p>
+          Only ready and done bits pass through it. An interrupt sets
+          its bits directly, with nothing in between that could
+          overflow.
+        </p>
+        <div class="tech-note">tk_set_flg / tk_wai_flg &middot; interrupt-safe</div>
+      </div>
+      <div class="card">
+        <h3>Data travels in single-writer structures</h3>
+        <p>
+          Processed images, joint positions, gesture results, and
+          story text each live in a structure written by exactly one
+          task, so no two tasks race over the same memory.
+        </p>
+        <div class="tech-note">shared memory &middot; one writer per structure</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Interaction</div>
+    <h2>Five gestures, one shared vocabulary</h2>
+    <p class="lede">
+      21 joint positions become one of five named gestures through
+      geometry ratio tests on the Cortex-M85 &mdash; no embedding
+      model, no network call, just distances and ratios computed
+      on-device.
+    </p>
+    <div class="chips" style="margin-top:22px;">
+      <span class="chip"><span class="chip-emoji" aria-hidden="true">&#x1F590;&#xFE0F;</span>Open Palm <span class="used-for">&middot; start / yes</span></span>
+      <span class="chip"><span class="chip-emoji" aria-hidden="true">&#x270A;</span>Fist <span class="used-for">&middot; goodbye / no</span></span>
+      <span class="chip"><span class="chip-emoji" aria-hidden="true">&#x270C;&#xFE0F;</span>Victory <span class="used-for">&middot; game play</span></span>
+      <span class="chip"><span class="chip-emoji" aria-hidden="true">&#x1F44D;</span>Thumbs Up <span class="used-for">&middot; yes</span></span>
+      <span class="chip"><span class="chip-emoji" aria-hidden="true">&#x1F44E;</span>Thumbs Down <span class="used-for">&middot; no</span></span>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Closing Thought</div>
+    <h2>A small proof of a larger idea</h2>
+    <p class="lede">
+      This demo is deliberately small &mdash; one board, one camera,
+      one child-sized conversation. But the same properties that make
+      it work reach well beyond this one demo. A gesture-only
+      interface reaches people voice and touch assistants don't:
+      non-verbal children, hospital patients, anyone across a
+      language barrier &mdash; the back-and-forth reciprocity here is
+      what makes an interface feel like it's listening, which matters
+      most for the users existing assistants serve worst.
+    </p>
+    <p class="lede">
+      Keeping every byte on-device means that reach doesn't cost
+      privacy: nothing about a child's face or voice has anywhere to
+      leak, by construction, not by policy.
+    </p>
+    <p class="lede">
+      And underneath both is the same discipline TRON was built on
+      since 1984: computers embedded everywhere, working reliably,
+      disappearing into their environment. This demo puts that
+      discipline under a new kind of pressure, without giving it up
+      &mdash; two AI workloads sharing one RA8P1 chip, under
+      &micro;T-Kernel's fixed priorities, without ever missing a
+      frame. AI doesn't have to mean flaky, cloud-dependent,
+      unpredictable. Not when it inherits an RTOS's decades of
+      determinism, instead of replacing it.
+    </p>
+  </section>
+
+</div>
