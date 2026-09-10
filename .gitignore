@@ -6,6 +6,8 @@
 *.ko
 *.obj
 *.elf
+Debug/
+Release/
 
 # Linker output
 *.ilk
@@ -53,3 +55,9 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# RA generated files
+ra/
+ra_cfg/
+ra_gen/
+.settings/
