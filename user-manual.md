@@ -245,7 +245,7 @@ The one exception is thumbs up. If you hold it steadily for about two seconds, i
 
 1. **Show an open palm.** The demo says `HI`, then asks `DO YOU LIKE TO PLAY A GAME?`
 2. **Thumbs up** to play. The demo counts `3`, `2`, `1`, `GO`, one per second.
-3. **Show rock, fist or victory** during the throw window. You have four seconds.
+3. **Show an open palm, a fist or a victory sign** (paper, rock or scissors) during the throw window. You have four seconds.
 4. The demo shows its own throw and the result: `YOU WIN`, `I WIN`, or `SAME`.
 5. It asks `CONTINUE?` — thumbs up for another round, thumbs down to move on.
 6. **Thumbs down** takes you to `WANT TO TELL A STORY?`
@@ -287,11 +287,11 @@ The two blue buttons look the same. Check the silkscreen label next to each one 
 | Phenomenon | What to do |
 |---|---|
 | Nothing on the terminal, and nothing on the screen | Check the USB cable and the power. Then check that the download really finished |
-| `STORAGE ERROR - DEMO IS LIMITED` in the bottom right | The external flash did not open. **Check switch SW4-3 is OFF**, and check SW4-1, SW4-4 and SW4-6 are OFF too (section 2.1), then power-cycle and download again |
+| `STORAGE ERROR - DEMO IS LIMITED` in the bottom right | The external flash did not open. **Check switch SW4-3 is OFF** (section 2.1), then power-cycle and download again |
 | Blank screen, but the terminal works | Check the display board is pressed fully down in its socket, not loose and not out (section 2), and check **SW4-6 is OFF** (section 2.1). If both are right, the display or the 2D engine did not start. Rebuild after **Generate Project Content** |
 | Terminal text is broken or missing, but the demo runs fine | Wrong terminal settings. Check 230400 baud, 8-N-1, no flow control in **Setup → Serial port...** (section 3.3) |
 | Download seems to work, but the board does nothing | In e² studio, choose **Run → Renesas Debug Tools → Renesas Device Partition Manager**. Set **Connection Type** to **SWD**, click **Initialize device**, then download again |
-| Camera picture is black | Check the camera flat cable is fully plugged in, not loose and not out (section 2), and check **SW4-6 is OFF** and **SW4-5 is OFF** (section 2.1) |
+| Camera picture is black | Check the camera flat cable is fully plugged in, not loose and not out (section 2), and check **SW4-6 is OFF** (section 2.1) |
 | Your hand is seen, but no gesture is accepted | Hold the shape for 2-3 seconds longer and more still. Then lower your hand fully and try again |
 | No red dots on your hand at all | Move closer, and check the lighting. Normal indoor light is enough; strong backlight is not |
 
