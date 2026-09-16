@@ -15,7 +15,7 @@ It does not explain how the demo works inside. For that, read the application no
 | Board | EK-RA8P1 evaluation kit (RTK7EKA8P1S01001BE) |
 | Camera | Camera Expansion Board part number (Arducam) (CU450_OV5640) |
 | Display | Parallel Graphics Expansion Board 1 (RTKLCDPAR1S00001BE) |
-| Cable | One USB cable to the on-board debug port |
+| Cable | One **USB Type-C to Type-C** cable, the one supplied with the kit. It goes to the on-board debug port, connector **J10**. Both ends are Type-C, so the PC needs a Type-C port |
 
 ### Software
 
@@ -81,7 +81,7 @@ Check the jumper settings against below table. If any one is different, set it b
 | J9 | Jumper on pins **2-3** |
 | J29 | Jumpers on pins **1-2**, **3-4**, **5-6**, **7-8**. All four are needed |
 
-Source for both tables: EK-RA8P1 v1 User's Manual (R20UT5309EG0104), §4.3.3 Table 2 page 13 and §4.3.4 Table 3 page 16. The four J29 jumpers are in §5.2.1 Table 8 page 22.
+Sources, all in the EK-RA8P1 v1 User's Manual (R20UT5309EG0104): the **SW4** switch names are in §4.3.4 Table 3 page 16, the jumper defaults in §4.3.3 Table 2 page 13, and the four J29 positions in §5.2.1 Table 8 page 22.
 
 ---
 
@@ -111,7 +111,7 @@ If you see no such port, the debug cable is in the wrong connector or the J-Link
 
 ### 3.3 Set the port
 
-1. Choose **Setup → Serial port...**
+1. Choose **Setup → Serial port...** In v5.7.0 this opens the **Tera Term: Additional settings** window with the **Serial port** tab selected.
 2. Set these values:
 
 | Field | Value |
@@ -126,8 +126,8 @@ If you see no such port, the debug cable is in the wrong connector or the J-Link
 
 ### 3.4 Set the terminal
 
-1. Choose **Setup → Terminal...**
-2. Set these values:
+1. Choose **Setup → Terminal...** This opens the **Tera Term: Additional settings** window with the **Terminal** tab selected.
+2. On the **Terminal** tab, set these values:
 
 | Field | Value |
 |---|---|
@@ -135,9 +135,12 @@ If you see no such port, the debug cable is in the wrong connector or the J-Link
 | New-line, Receive | **AUTO** |
 | New-line, Transmit | **CR** |
 | Local echo | **off** (unticked) |
-| Coding, receive | **UTF-8** |
 
-3. Click **OK**.
+3. Click the **Encoding** tab at the top of the same window. Under **Encoding**, set **Receive** to **UTF-8**.
+
+   > **Note:** In v5.7.0 the receive encoding is **not** on the Terminal tab. All the tabs belong to one window, so you do not have to close and reopen it.
+
+4. Click **OK**.
 
 ### 3.5 Keep the settings
 
