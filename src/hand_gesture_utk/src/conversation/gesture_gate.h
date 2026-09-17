@@ -29,6 +29,8 @@
 #define GATE_SETTLE_MS      (700U)    /* rule 3: nothing is accepted this soon after a change */
 #define GATE_RELEASE_MS     (300U)    /* rule 4: unbroken release gap, counted since the state
                                        *         began, and only while the models are on      */
+#define GATE_RELEASE_RESULTS (3U)     /* rule 4: and at least this many absent results in a
+                                       *         row. UNCONFIRMED - tuned on the bench.       */
 #define GATE_LONG_HOLD_MS   (2000U)   /* rule 6: thumbs up only, in the four question states.
                                        *         UNCONFIRMED - tuned on the bench. It must
                                        *         stay well above GATE_RELEASE_MS and well
@@ -43,7 +45,8 @@
  *********************************************************************************************************************/
 typedef struct {
     uint32_t  state_start_ms;                   /* when the current state began               */
-    uint32_t  released_since_ms[GESTURE_COUNT]; /* start of the current release gap           */
+    uint32_t  absent_since_ms[GESTURE_COUNT];   /* first result of the current release gap    */
+    uint8_t   absent_count[GESTURE_COUNT];      /* absent results in a row in that gap        */
     bool      released_ok[GESTURE_COUNT];       /* rule 4 satisfied for this shape            */
     uint32_t  held_since_ms;                    /* start of the current unbroken hold         */
     gesture_t held_shape;                       /* which shape that hold is                   */
