@@ -301,11 +301,6 @@ The two blue buttons look the same. Check the silkscreen label next to each one 
 
 | Document | What it covers |
 |---|---|
-| `hand_gesture_utk_application_note.md` | How the demo works, and how to reuse the design |
-| [Basic specifications](/Basic-Specs/README.md) | System and hardware architecture |
-| [Functional specifications](/Functional-Specs/README.md) | Screen behaviour, states, error handling |
-| [Detailed specifications](/Detailed-Specs/README.md) | FSP settings, memory, task design |
-| [Test specifications](/Test-Specs/Test-Specs.md) | How the demo is tested |
 | EK-RA8P1 v1 User's Manual (R20UT5309EG0104) | Board switches, jumpers and connectors. Configuration switch SW4 is in §4.3.4, Table 3 page 16 and Table 4 page 17. The default jumper positions are in §4.3.3, Table 2 page 13, and the on-board debug jumpers including all four J29 positions are in §5.2.1, Table 8 page 22. The buttons SW1, SW2 and SW3 are in §5.5.2, Table 25 page 32. The Octo-SPI flash is in §6.3, page 35 |
 
 ---
