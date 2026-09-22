@@ -3,15 +3,17 @@
  * Description  : The six hold rules that decide when a hand shape may be accepted.
  *
  * New file. Not copied from sample_code. The structure, the four function signatures and the
- * five rule constants are in gesture_gate.h.
+ * six rule constants are in gesture_gate.h.
  *
  * WHAT THE SIX RULES ARE, IN ONE PLACE
  * ------------------------------------
  * 1. Hold      three or more matching results in a row, spanning at least 600 ms   gate_feed
  * 2. Quality   landmark score at least 0.5 and palm length at least 40 pixels      gate_feed
  * 3. Settle    nothing is accepted in the first 700 ms of a state                  gate_take
- * 4. Release   the shape must have been absent for one unbroken 300 ms since the
- *              state began, and only while the models are on                       gate_feed
+ * 4. Release   the shape must have been absent for one unbroken 300 ms and at least
+ *              three results in a row since the state began, and only while the
+ *              models are on. Absent means no usable hand, or a different
+ *              recognised shape                                                     gate_feed
  * 5. Where     a per-state table: the release gate runs in five states and is
  *              deliberately off in S_GAME_THROW                                     gate_take
  * 6. Long hold a THUMBS UP held unbroken for 2,000 ms is accepted anyway, in the
@@ -97,12 +99,13 @@ void gate_reset(gesture_gate_t * g, uint32_t now_ms)
     g->state_start_ms = now_ms;
 
     /* Rule 4 starts from zero for every shape. Nothing is released until the demo has actually
-     * seen 300 ms without that shape, which is what stops a hand that was already up from
-     * answering the new state's question. */
+     * seen the shape absent for 300 ms and three results in a row, which is what stops a hand
+     * that was already up from answering the new state's question. */
     for (i = 0U; i < (uint32_t) GESTURE_COUNT; i++)
     {
-        g->released_since_ms[i] = now_ms;
-        g->released_ok[i]       = false;
+        g->absent_since_ms[i] = now_ms;
+        g->absent_count[i]    = 0U;
+        g->released_ok[i]     = false;
     }
 
     g->held_since_ms = now_ms;
@@ -116,6 +119,7 @@ void gate_reset(gesture_gate_t * g, uint32_t now_ms)
 void gate_feed(gesture_gate_t * g, gesture_t raw, float score, float palm_px, uint32_t now_ms)
 {
     gesture_t shape = raw;
+    bool      no_hand;
     uint32_t  i;
 
     if (NULL == g)
@@ -130,7 +134,9 @@ void gate_feed(gesture_gate_t * g, gesture_t raw, float score, float palm_px, ui
      *
      * The two limits are the recogniser's own (src\hand_gestures\palm_detection\
      * gesture_classify.c). Rule 2 adds no third quality test of its own. */
-    if ((score < GESTURE_MIN_LANDMARK_SCORE) || (palm_px < GESTURE_MIN_PALM_PIXELS))
+    no_hand = (score < GESTURE_MIN_LANDMARK_SCORE) || (palm_px < GESTURE_MIN_PALM_PIXELS);
+
+    if (no_hand)
     {
         shape = GESTURE_UNKNOWN;
     }
@@ -141,24 +147,46 @@ void gate_feed(gesture_gate_t * g, gesture_t raw, float score, float palm_px, ui
      * models are on, so "only while the models are on" needs no flag here: with the models off
      * nothing is fed and no gap accrues, which is why no timer is carried across a story.
      *
-     * released_ok latches. Once a shape has been absent for one unbroken 300 ms inside this
-     * state it stays accepted-able, so a child who lowers a fist and shows it again is
-     * understood. */
+     * Two things keep one misread result from releasing a hand that never moved:
+     *
+     * A. Only real evidence counts as absent: no usable hand (rule 2 failed), or a DIFFERENT
+     *    recognised shape. An unknown result from a usable hand (a finger or the thumb
+     *    undecided) is not evidence either way, so it breaks the gap and starts it again.
+     * B. The gap is measured from its FIRST absent result, and it needs GATE_RELEASE_RESULTS
+     *    absent results in a row as well as GATE_RELEASE_MS.
+     *
+     * released_ok latches. Once a shape has been released inside this state it stays
+     * accepted-able, so a child who lowers a fist and shows it again is understood. */
     for (i = 0U; i < (uint32_t) GESTURE_COUNT; i++)
     {
-        if ((gesture_t) i == shape)
+        const bool absent = no_hand || ((GESTURE_UNKNOWN != shape) && ((gesture_t) i != shape));
+
+        if (g->released_ok[i])
         {
-            /* Seen. One result reporting this shape restarts the count from zero. */
-            g->released_since_ms[i] = now_ms;
+            /* Already open. Nothing to do. */
         }
-        else if (!g->released_ok[i] &&
-                 (gate_elapsed(g->released_since_ms[i], now_ms) >= GATE_RELEASE_MS))
+        else if (!absent)
         {
-            g->released_ok[i] = true;
+            /* Seen, or not sure. Either way the gap is broken. */
+            g->absent_count[i] = 0U;
         }
         else
         {
-            /* Still accruing, or already open. Nothing to do. */
+            if (0U == g->absent_count[i])
+            {
+                g->absent_since_ms[i] = now_ms;
+            }
+
+            if (g->absent_count[i] < 0xFFU)
+            {
+                g->absent_count[i]++;
+            }
+
+            if ((g->absent_count[i] >= GATE_RELEASE_RESULTS) &&
+                (gate_elapsed(g->absent_since_ms[i], now_ms) >= GATE_RELEASE_MS))
+            {
+                g->released_ok[i] = true;
+            }
         }
     }
 

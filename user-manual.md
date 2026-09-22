@@ -6,7 +6,7 @@ It does not explain how the demo works inside. For that, read the application no
 
 ---
 
-## 1. What you need
+## 1. Requirements
 
 ### Hardware
 
@@ -15,7 +15,7 @@ It does not explain how the demo works inside. For that, read the application no
 | Board | EK-RA8P1 evaluation kit (RTK7EKA8P1S01001BE) |
 | Camera | Camera Expansion Board part number (Arducam) (CU450_OV5640) |
 | Display | Parallel Graphics Expansion Board 1 (RTKLCDPAR1S00001BE) |
-| Cable | One USB cable to the on-board debug port |
+| Cable | One **USB Type-C to Type-C** cable, the one supplied with the kit. It goes to the on-board debug port, connector **J10**. Both ends are Type-C, so the PC needs a Type-C port |
 
 ### Software
 
@@ -33,10 +33,10 @@ Install all four before you start.
 | Item | Detail |
 |---|---|
 | Repository | <https://github.com/gnomons-labs/conversational-hand-gestures-demo> |
-| Project folder | `src/hand_gesture_utk` |
+| Project archive | `hand_gesture_utk.zip`, in the root folder of the repository |
 | Branch | `main` |
 
-Clone it, or download it as a ZIP and unpack it, before you start section 4. Section 4 imports the `hand_gesture_utk` folder from this repository.
+Clone the repository, or download `hand_gesture_utk.zip` from it, before you start section 4. Do not unpack `hand_gesture_utk.zip`. Section 4 imports it as it is.
 
 ---
 
@@ -81,7 +81,7 @@ Check the jumper settings against below table. If any one is different, set it b
 | J9 | Jumper on pins **2-3** |
 | J29 | Jumpers on pins **1-2**, **3-4**, **5-6**, **7-8**. All four are needed |
 
-Source for both tables: EK-RA8P1 v1 User's Manual (R20UT5309EG0104), §4.3.3 Table 2 page 13 and §4.3.4 Table 3 page 16. The four J29 jumpers are in §5.2.1 Table 8 page 22.
+Sources, all in the EK-RA8P1 v1 User's Manual (R20UT5309EG0104): the **SW4** switch names are in §4.3.4 Table 3 page 16, the jumper defaults in §4.3.3 Table 2 page 13, and the four J29 positions in §5.2.1 Table 8 page 22.
 
 ---
 
@@ -111,7 +111,7 @@ If you see no such port, the debug cable is in the wrong connector or the J-Link
 
 ### 3.3 Set the port
 
-1. Choose **Setup → Serial port...**
+1. Choose **Setup → Serial port...** In v5.7.0 this opens the **Tera Term: Additional settings** window with the **Serial port** tab selected.
 2. Set these values:
 
 | Field | Value |
@@ -126,8 +126,8 @@ If you see no such port, the debug cable is in the wrong connector or the J-Link
 
 ### 3.4 Set the terminal
 
-1. Choose **Setup → Terminal...**
-2. Set these values:
+1. Choose **Setup → Terminal...** This opens the **Tera Term: Additional settings** window with the **Terminal** tab selected.
+2. On the **Terminal** tab, set these values:
 
 | Field | Value |
 |---|---|
@@ -135,9 +135,12 @@ If you see no such port, the debug cable is in the wrong connector or the J-Link
 | New-line, Receive | **AUTO** |
 | New-line, Transmit | **CR** |
 | Local echo | **off** (unticked) |
-| Coding, receive | **UTF-8** |
 
-3. Click **OK**.
+3. Click the **Encoding** tab at the top of the same window. Under **Encoding**, set **Receive** to **UTF-8**.
+
+   > **Note:** In v5.7.0 the receive encoding is **not** on the Terminal tab. All the tabs belong to one window, so you do not have to close and reopen it.
+
+4. Click **OK**.
 
 ### 3.5 Keep the settings
 
@@ -153,22 +156,10 @@ Choose **File → Log...**, pick a file name, and tick **Timestamp**. This is us
 
 1. Start e² studio.
 2. Choose **File → Import → Existing Projects into Workspace**.
-3. Select the `hand_gesture_utk` project folder and import it. It is under `src/` in the repository named in section 1.
-4. Open `configuration.xml`. This opens the RA Configuration editor.
-5. Click **Generate Project Content**.
-
-   > **Note:** In the RA Configuration editor, on the **Stacks** tab, you now see three errors on the D/AVE 2D Port Interface stack (`r_drw`). All three ask for a BSP heap:
-   >
-   > ```
-   > D/AVE 2D Port Interface (r_drw): For AzureRTOS application, BSP heap is required under 'BSP | RA COMMON | HEAP SIZE'.
-   > D/AVE 2D Port Interface (r_drw): For BareMetal application, BSP heap is required under 'BSP | RA COMMON | HEAP SIZE'.
-   > D/AVE 2D Port Interface (r_drw): For FreeRTOS application, either BSP heap or thread heap is required.
-   > ```
-   >
-   > **These three are harmless and expected.** They cover three cases: AzureRTOS, bare metal (no RTOS at all) and FreeRTOS. This demo runs on µT-Kernel, which is none of the three, so none of the three checks applies to it. Ignore them and go on.
-
-6. Set the active build configuration to **Debug**.
-7. Build.
+3. Choose **Select archive file:**, click **Browse...**, and select `hand_gesture_utk.zip` from the root folder of the repository named in section 1.
+4. Check that `hand_gesture_utk` is ticked in the **Projects** list, then click **Finish**.
+5. Set the active build configuration to **Debug**.
+6. Build.
 
 A good build ends with `Build Finished. 0 errors`.
 
@@ -245,7 +236,7 @@ The one exception is thumbs up. If you hold it steadily for about two seconds, i
 
 1. **Show an open palm.** The demo says `HI`, then asks `DO YOU LIKE TO PLAY A GAME?`
 2. **Thumbs up** to play. The demo counts `3`, `2`, `1`, `GO`, one per second.
-3. **Show rock, fist or victory** during the throw window. You have four seconds.
+3. **Show an open palm, a fist or a victory sign** (paper, rock or scissors) during the throw window. You have four seconds.
 4. The demo shows its own throw and the result: `YOU WIN`, `I WIN`, or `SAME`.
 5. It asks `CONTINUE?` — thumbs up for another round, thumbs down to move on.
 6. **Thumbs down** takes you to `WANT TO TELL A STORY?`
@@ -287,11 +278,11 @@ The two blue buttons look the same. Check the silkscreen label next to each one 
 | Phenomenon | What to do |
 |---|---|
 | Nothing on the terminal, and nothing on the screen | Check the USB cable and the power. Then check that the download really finished |
-| `STORAGE ERROR - DEMO IS LIMITED` in the bottom right | The external flash did not open. **Check switch SW4-3 is OFF**, and check SW4-1, SW4-4 and SW4-6 are OFF too (section 2.1), then power-cycle and download again |
-| Blank screen, but the terminal works | Check the display board is pressed fully down in its socket, not loose and not out (section 2), and check **SW4-6 is OFF** (section 2.1). If both are right, the display or the 2D engine did not start. Rebuild after **Generate Project Content** |
+| `STORAGE ERROR - DEMO IS LIMITED` in the bottom right | The external flash did not open. **Check switch SW4-3 is OFF** (section 2.1), then power-cycle and download again |
+| Blank screen, but the terminal works | Check the display board is pressed fully down in its socket, not loose and not out (section 2), and check **SW4-6 is OFF** (section 2.1). If both are right, the display or the 2D engine did not start. Generate the project content again (Appendix A), then build and download again |
 | Terminal text is broken or missing, but the demo runs fine | Wrong terminal settings. Check 230400 baud, 8-N-1, no flow control in **Setup → Serial port...** (section 3.3) |
 | Download seems to work, but the board does nothing | In e² studio, choose **Run → Renesas Debug Tools → Renesas Device Partition Manager**. Set **Connection Type** to **SWD**, click **Initialize device**, then download again |
-| Camera picture is black | Check the camera flat cable is fully plugged in, not loose and not out (section 2), and check **SW4-6 is OFF** and **SW4-5 is OFF** (section 2.1) |
+| Camera picture is black | Check the camera flat cable is fully plugged in, not loose and not out (section 2), and check **SW4-6 is OFF** (section 2.1) |
 | Your hand is seen, but no gesture is accepted | Hold the shape for 2-3 seconds longer and more still. Then lower your hand fully and try again |
 | No red dots on your hand at all | Move closer, and check the lighting. Normal indoor light is enough; strong backlight is not |
 
@@ -310,9 +301,35 @@ The two blue buttons look the same. Check the silkscreen label next to each one 
 
 | Document | What it covers |
 |---|---|
-| `hand_gesture_utk_application_note.md` | How the demo works, and how to reuse the design |
-| [Basic specifications](/Basic-Specs/README.md) | System and hardware architecture |
-| [Functional specifications](/Functional-Specs/README.md) | Screen behaviour, states, error handling |
-| [Detailed specifications](/Detailed-Specs/README.md) | FSP settings, memory, task design |
-| [Test specifications](/Test-Specs/Test-Specs.md) | How the demo is tested |
 | EK-RA8P1 v1 User's Manual (R20UT5309EG0104) | Board switches, jumpers and connectors. Configuration switch SW4 is in §4.3.4, Table 3 page 16 and Table 4 page 17. The default jumper positions are in §4.3.3, Table 2 page 13, and the on-board debug jumpers including all four J29 positions are in §5.2.1, Table 8 page 22. The buttons SW1, SW2 and SW3 are in §5.5.2, Table 25 page 32. The Octo-SPI flash is in §6.3, page 35 |
+
+---
+
+## Appendix A. Generate the project content
+
+Most users can skip this appendix. Section 4 builds the demo from the generated files in the project archive.
+
+Do these steps only when:
+
+- you imported the project folder `src/hand_gesture_utk` instead of `hand_gesture_utk.zip`. The folder does not include the generated files, or
+- the `ra`, `ra_cfg` or `ra_gen` folder is missing from the project, or
+- you changed a setting in `configuration.xml`, or
+- section 8 tells you to.
+
+Generation writes over the `ra`, `ra_cfg` and `ra_gen` folders. Do not edit the files in them by hand.
+
+1. If the project is not in e² studio yet, import it as in section 4, steps 1 to 4.
+2. Open `configuration.xml`. This opens the RA Configuration editor.
+3. Click **Generate Project Content**. Wait for it to finish.
+
+   > **Note:** In the RA Configuration editor, on the **Stacks** tab, you now see three errors on the D/AVE 2D Port Interface stack (`r_drw`). All three ask for a BSP heap:
+   >
+   > ```
+   > D/AVE 2D Port Interface (r_drw): For AzureRTOS application, BSP heap is required under 'BSP | RA COMMON | HEAP SIZE'.
+   > D/AVE 2D Port Interface (r_drw): For BareMetal application, BSP heap is required under 'BSP | RA COMMON | HEAP SIZE'.
+   > D/AVE 2D Port Interface (r_drw): For FreeRTOS application, either BSP heap or thread heap is required.
+   > ```
+   >
+   > **These three are harmless and expected.** They cover three cases: AzureRTOS, bare metal (no RTOS at all) and FreeRTOS. This demo runs on µT-Kernel, which is none of the three, so none of the three checks applies to it. Ignore them and go on.
+
+4. Go back to section 4, step 5, and build.
