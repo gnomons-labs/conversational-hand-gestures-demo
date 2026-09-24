@@ -2,8 +2,6 @@
 
 This manual tells you how to set up the board, build the demo, load it, and use it.
 
-It does not explain how the demo works inside. For that, read the application note `hand_gesture_utk_application_note.md`.
-
 ---
 
 ## 1. Requirements
@@ -19,7 +17,7 @@ It does not explain how the demo works inside. For that, read the application no
 
 ### Software
 
-Install all four before you start.
+Install the first four before you start. The fifth is needed only if you clone the repository.
 
 | Item | Version |
 |---|---|
@@ -27,6 +25,7 @@ Install all four before you start.
 | FSP (Flexible Software Package) | 6.4.0 |
 | LLVM for Arm (ATfE) | 21.1.1 |
 | Serial terminal | TeraTerm v5.7.0 |
+| Git LFS (Large File Storage) | Any current version. Only for the clone path. See Appendix B |
 
 ### The project source
 
@@ -245,13 +244,13 @@ The one exception is thumbs up. If you hold it steadily for about two seconds, i
 
 ![A full session](imgs/session-flow.png)
 
-### Timing you should expect
+### Expected timings
 
-| Thing | Time |
+| What happens | Time |
 |---|---|
 | Start-up to the waiting screen | About 2 seconds |
 | Time to hold a gesture before it counts | About 1 second |
-| Time to wait for response | 15 seconds |
+| Timeout to wait for user's response | 15 seconds |
 | Rock-paper-scissors throw window | 4 seconds |
 | A full 128-word story | About 50 seconds |
 
@@ -263,8 +262,8 @@ The board has three small push buttons. Two are blue, one is red.
 
 | Button | Colour | What it does in the demo |
 |---|---|---|
-| **SW2** | Blue | **Reset application.** Goes straight back to the waiting screen and drops any story in progress. Use this to clear the demo for the next visitor |
-| **SW1** | Blue | Turns the gesture tuning overlay on or off. This is a developer aid. Leave it off at a booth |
+| **SW2** | Blue | **Reset application.** Goes straight back to the waiting screen and drops any story in progress. Use this to reset the demo |
+| **SW1** | Blue | Turns the gesture tuning overlay on or off. This is for debugging purpose. Leave it off for normal use. |
 | **SW3** | Red | **MCU reset.** Restarts the whole board. You do not need this for normal use — it takes about two seconds to come back |
 
 > **Use SW2, not SW3.** SW2 clears the demo in an instant and keeps it running. SW3 reboots the board and makes the visitor wait.
@@ -301,6 +300,11 @@ The two blue buttons look the same. Check the silkscreen label next to each one 
 
 | Document | What it covers |
 |---|---|
+| `hand_gesture_utk_application_note.md` | How the demo works, and how to reuse the design |
+| [Basic specifications](/Basic-Specs/README.md) | System and hardware architecture |
+| [Functional specifications](/Functional-Specs/README.md) | Screen behaviour, states, error handling |
+| [Detailed specifications](/Detailed-Specs/README.md) | FSP settings, memory, task design |
+| [Test specifications](/Test-Specs/Test-Specs.md) | How the demo is tested |
 | EK-RA8P1 v1 User's Manual (R20UT5309EG0104) | Board switches, jumpers and connectors. Configuration switch SW4 is in §4.3.4, Table 3 page 16 and Table 4 page 17. The default jumper positions are in §4.3.3, Table 2 page 13, and the on-board debug jumpers including all four J29 positions are in §5.2.1, Table 8 page 22. The buttons SW1, SW2 and SW3 are in §5.5.2, Table 25 page 32. The Octo-SPI flash is in §6.3, page 35 |
 
 ---
@@ -309,12 +313,14 @@ The two blue buttons look the same. Check the silkscreen label next to each one 
 
 Most users can skip this appendix. Section 4 builds the demo from the generated files in the project archive.
 
-Do these steps only when:
+Do these steps only in one of these four cases:
 
-- you imported the project folder `src/hand_gesture_utk` instead of `hand_gesture_utk.zip`. The folder does not include the generated files, or
-- the `ra`, `ra_cfg` or `ra_gen` folder is missing from the project, or
-- you changed a setting in `configuration.xml`, or
-- section 8 tells you to.
+- you imported the project folder `src/hand_gesture_utk` instead of `hand_gesture_utk.zip`, because the folder does not include the generated files
+- the `ra`, `ra_cfg` or `ra_gen` folder is missing from the project
+- you changed a setting in `configuration.xml`
+- section 8 tells you to
+
+In the first case, do **Appendix B** before you start here. A clone made without Git LFS holds no story model, and the build fails however you generate the project content.
 
 Generation writes over the `ra`, `ra_cfg` and `ra_gen` folders. Do not edit the files in them by hand.
 
@@ -333,3 +339,81 @@ Generation writes over the `ra`, `ra_cfg` and `ra_gen` folders. Do not edit the 
    > **These three are harmless and expected.** They cover three cases: AzureRTOS, bare metal (no RTOS at all) and FreeRTOS. This demo runs on µT-Kernel, which is none of the three, so none of the three checks applies to it. Ignore them and go on.
 
 4. Go back to section 4, step 5, and build.
+
+---
+
+## Appendix B. Get the model file with Git LFS
+
+Skip this appendix if you use `hand_gesture_utk.zip`. It is only for users who clone the repository and import the project folder `src/hand_gesture_utk`.
+
+The story model file `src/hand_gesture_utk/src/story/llm_model/stories15M_q80.h` is about 100 MB. The repository stores it with **Git LFS** (Large File Storage). A clone made without Git LFS does not fail. It writes a small text pointer file in place of the model. The file is there, the name is right, and the build then fails, because pointer text is not C code.
+
+Do these three steps before you import the project folder.
+
+### B.1 Check for Git LFS
+
+Open a command prompt and run:
+
+```
+git lfs version
+```
+
+| Result | Meaning |
+|---|---|
+| A version line, such as `git-lfs/3.5.1 (GitHub; windows amd64; go 1.21.6)` | Git LFS is installed. Go to B.3 |
+| `git: 'lfs' is not a git command` | Git LFS is missing. Do B.2 |
+
+### B.2 Install Git LFS
+
+1. Download the Windows installer from <https://git-lfs.com> and run it.
+2. Open a new command prompt and run this once:
+
+   ```
+   git lfs install
+   ```
+
+   It prints `Git LFS initialized.` You only need this once per user account, not once per repository.
+
+### B.3 Get the model file
+
+For a new clone, nothing extra is needed. Git LFS downloads the model with the clone:
+
+```
+git clone https://github.com/gnomons-labs/conversational-hand-gestures-demo.git
+```
+
+If you already cloned the repository before installing Git LFS, do not clone it again. Fetch the real files into the clone you have:
+
+```
+cd conversational-hand-gestures-demo
+git lfs pull
+```
+
+### B.4 Confirm the model file is real
+
+Check the size. In the repository folder, run this in PowerShell:
+
+```
+(Get-Item src\hand_gesture_utk\src\story\llm_model\stories15M_q80.h).Length
+```
+
+| Result | Meaning |
+|---|---|
+| `105460598` | The real model. Go on to Appendix A |
+| About `130` | A pointer file. Go back to B.2, then run `git lfs pull` |
+
+You can also open the file and read the first line. The real model starts with a C array:
+
+```
+__attribute__((section(".ospi0_cs1"), aligned(16))) uint8_t stories15M_q80_bin[] = {
+```
+
+A pointer file is three short lines and no C code:
+
+```
+version https://git-lfs.github.com/spec/v1
+oid sha256:...
+size 105460598
+```
+
+When the file is real, go to Appendix A to generate the project content, then to section 4, step 5, to build.
