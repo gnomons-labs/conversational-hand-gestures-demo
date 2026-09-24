@@ -348,7 +348,7 @@ Skip this appendix if you use `hand_gesture_utk.zip`. It is only for users who c
 
 The story model file `src/hand_gesture_utk/src/story/llm_model/stories15M_q80.h` is about 100 MB. The repository stores it with **Git LFS** (Large File Storage). A clone made without Git LFS does not fail. It writes a small text pointer file in place of the model. The file is there, the name is right, and the build then fails, because pointer text is not C code.
 
-Do these three steps before you import the project folder.
+Do these four steps before you import the project folder.
 
 ### B.1 Check for Git LFS
 
