@@ -12,11 +12,9 @@
 #ifndef CAMERA_CAMERA_LAYER_H_
  #define CAMERA_CAMERA_LAYER_H_
 
-/* was: #include <cam_thread.h>, deleted here. That generated header no longer exists - FSP
- * made it only because g_cam_clk and g_cam_i2c_master sat under the Camera Display Thread, and
- * it was what declared them. Both stacks moved to HAL/Common, so the "hal_data.h" line just
- * below - which this file already had - declares exactly those two symbols now
- * (ra_gen/hal_data.h:19 and :29). No replacement include is needed.
+/* THE CAMERA CLOCK AND I2C STACKS LIVE UNDER HAL/Common, so g_cam_clk and g_cam_i2c_master are
+ * declared by the "hal_data.h" line just below (ra_gen/hal_data.h:19 and :29). No other include
+ * declares them.
  * THIS IS THE FULL NOTE. src\camera_layer\arducam_port.c points here. */
 #include "hal_data.h"
 #include "arducam.h"

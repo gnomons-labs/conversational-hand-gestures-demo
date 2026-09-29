@@ -32,16 +32,13 @@ volatile fsp_err_t g_startup_ospi_err = FSP_SUCCESS;
  **********************************************************************************************************************/
 void hal_entry(void)
 {
-    /* Start micro T-Kernel 3.0. It never returns - the kernel runs its own
-     * initial task, which calls usermain() in src/app_main.c.
-     * The local declaration is the form the BSP2 manual prescribes:
-     * ref_docs/bsp2_ra_fsp_jp.md section 4.2.3, lines 702-703.
+    /* Start micro T-Kernel 3.0. It never returns - the kernel runs its own initial task, which
+     * calls usermain() in src/app_main.c.
      *
-     * was: an empty body with the comment "Do nothing. This function will not be
-     * called in RTOS enabled project." Under FreeRTOS the FSP generator produced an
-     * RTOS main() that started the scheduler and never called hal_entry(). With
-     * BSP_CFG_RTOS 0 the generated ra_gen/main.c calls hal_entry() instead, so this
-     * is now the only place the kernel can be started from. */
+     * The local declaration is the form the BSP2 for RA FSP manual prescribes, section 4.2.3.
+     *
+     * With BSP_CFG_RTOS 0 the generated ra_gen/main.c calls hal_entry(), so this is the only
+     * place the kernel can be started from. */
     void knl_start_mtkernel(void);
     knl_start_mtkernel();
 }
@@ -75,9 +72,8 @@ void R_BSP_WarmStart(bsp_warm_start_event_t event)
         fsp_err_t err = ospi_b_init();
 
         /* This hook runs long before the console or the screen exists, so the failure is
-         * LATCHED and reported later. The vision fork's
-         * __BKPT(0) is deleted, because a breakpoint with no debugger attached is a dead board
-         * and a booth demo never stops at one.
+         * LATCHED and reported later. There is no breakpoint on this path: a demo running
+         * unattended must not stop.
          *
          * The Flexible Software Package copies .sdram_from_ospi0_cs1 AFTER this hook, so a
          * failure here costs both vision models and all the artwork as well as the story. That
@@ -93,11 +89,9 @@ void R_BSP_WarmStart(bsp_warm_start_event_t event)
 #if ENABLE_OSPI_8BIT_MODE
         // Important note: In order to use 8D-8D-8D, the data must be written with byte order swap in 16bit unit.
         //                 This project does not provide a solution. It is recommended to swap the data before programming by debugger
-        /* The last __BKPT(0) in this file is deleted. It was unreachable -
-         * ENABLE_OSPI_8BIT_MODE is (0) in src\application_config.h, and T_STORY makes this
-         * switch itself, later, where it can report the failure - but no breakpoint is left on
-         * an error path, and a dead one still has to be worked out by the next reader. LED3 is
-         * kept. */
+        /* ENABLE_OSPI_8BIT_MODE is (0) in src\application_config.h, so this branch is not
+         * built: T_STORY makes the protocol switch itself, later, where it can report the
+         * failure. LED3 is the only report available here. */
         err = ospi_b_set_protocol_to_opi();
         if(FSP_SUCCESS != err)
         {

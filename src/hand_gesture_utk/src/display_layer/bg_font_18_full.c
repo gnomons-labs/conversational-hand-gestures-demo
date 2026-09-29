@@ -12,61 +12,48 @@
  ***************************************************************************************************************************/
 /* GIMP RGB C-Source image dump (bg_font_18_full.c) */
 
-/* THE CHARACTERS THIS TABLE HOLDS, corrected 2026-08-19.
+/* THE CHARACTERS THIS TABLE HOLDS.
  *
  * The table holds 73 entries:
  *   space  %  '  "  -  .  /  :  ,  ?  !
  *   the ten digits 0 to 9
  *   A to Z and a to z
  *
- * THAT LIST IS FOR READING AND IS NOT THE TABLE ORDER. The double quote is the LAST entry
- * in the table, after the exclamation mark, because it was appended by 2026-08-19's bench
- * fix; the list above simply groups it with the other marks. Before you add an entry,
- * search the table for that character - the rule below is one entry per character, and the
- * lookup returns the FIRST match, so a second entry is dead code that never draws.
+ * THAT LIST IS FOR READING AND IS NOT THE TABLE ORDER. Before you add an entry, search the
+ * table for that character: the rule is one entry per character, and the lookup returns the
+ * FIRST match, so a second entry is dead code that never draws.
  *
- * FIVE MARKS ARE DRAWN BY HAND.
- *   - The comma, the question mark and the exclamation mark were missing from the font.
- *   - The apostrophe was in the font, but its image turned out to be a degree sign, so it was
- *     replaced in place.
- *   - The double quote was added by bench fix 2 on 2026-08-19, after it was found missing on
- *     the panel.
- * Each sits in the same 22 row cell as the letters, so no font is borrowed and no font licence
- * has to be checked. They are two value images, full white 0xFFFF or black 0x0000, with no
- * grey edge smoothing, so the style does not match the rest of the font exactly. Each entry
- * costs 856 bytes of MRAM.
+ * FIVE MARKS ARE DRAWN BY HAND, because the font did not carry them in usable form: the comma,
+ * the question mark, the exclamation mark, the apostrophe and the double quote. Each sits in the
+ * same 22 row cell as the letters, so no font is borrowed and no font licence has to be checked.
+ * They are two value images, full white 0xFFFF or black 0x0000, with no grey edge smoothing, so
+ * the style does not match the rest of the font exactly. Each entry costs 856 bytes of MRAM.
  *
- * THE DOUBLE QUOTE WAS ADDED 2026-08-19, bench fix 2. It was never in this table at all.
- * print_bg_font_18 draws a SPACE for any character it cannot find, so every " in the story text
- * simply vanished. The story generator writes mostly speech, so that was most of the
- * punctuation the story needs. Its width is 11.
+ * THE DOUBLE QUOTE MATTERS MORE THAN IT LOOKS. print_bg_font_18 draws a SPACE for any character
+ * it cannot find, and the story generator writes mostly speech, so without this entry most of
+ * the story's punctuation would simply vanish. Its width is 11.
  *
- * THE APOSTROPHE IS DRAWN BY HAND TOO, 2026-08-19, and it REPLACES the earlier entry IN PLACE.
- * The image that was here was a small hollow ring - a degree sign, read out of its own pixels -
- * so a word like DON'T printed with a ring in the middle of it. It is replaced, NOT appended:
- * the lookup at the bottom of this file returns the FIRST entry whose ascii_value matches, so a
- * second entry for the same character would never be drawn. There is exactly one entry per
- * character in this table and there must stay exactly one.
+ * THE APOSTROPHE REPLACES AN EARLIER ENTRY IN PLACE. The image first held here was a small
+ * hollow ring - a degree sign - so a word like DON'T printed with a ring in the middle of it.
+ * It is replaced, NOT appended, because the lookup at the bottom of this file returns the FIRST
+ * entry whose ascii_value matches. There is exactly one entry per character in this table and
+ * there must stay exactly one.
  *
  * ITS WIDTH IS DELIBERATELY LEFT AT 8, the ring's own width, and its ink is deliberately kept
- * inside rows 1 to 8, the ring's own rows. THIS IS NOT AN ACCIDENT AND IT SHOULD NOT BE "TIDIED"
- * WITHOUT A BENCH TEST. An earlier try at a narrower apostrophe - width 5, a 2 pixel wide bar in
- * rows 1 to 5 - drew NOTHING AT ALL on the panel. The cause was never found. Nothing in
- * print_bg_font_18, d2_setblitsrc or d2_blitcopy can tell that image apart from the COMMA, which
- * is also width 5, also a 2 pixel wide bar, has the same 18 lit bytes, sits at the same columns,
- * and draws correctly; the only difference is which rows the ink is in. So the failure has no
- * explanation in the source, and this entry sidesteps the whole question by keeping the width
- * and the row range of an image that IS known to draw. If you ever narrow it, look at the panel.
- * THE WAY TO LOOK IS SW1: ui_draw_tuning_overlay in src\display_layer\ui_screen.c draws
- * g_font_self_test, which is every hand-drawn mark between two capital I letters, at the
- * same scaling 1.0 the story text uses. ONE PHOTOGRAPH of that line says whether a changed
- * glyph still draws. You do not have to build a test - it is already there.
+ * inside rows 1 to 8, the ring's own rows. THIS IS NOT AN ACCIDENT AND IT SHOULD NOT BE
+ * "TIDIED" WITHOUT LOOKING AT THE PANEL. A narrower apostrophe - width 5, a 2 pixel wide bar in
+ * rows 1 to 5 - drew NOTHING AT ALL on the panel, and nothing in print_bg_font_18,
+ * d2_setblitsrc or d2_blitcopy can tell that image apart from the COMMA, which is also width 5,
+ * also a 2 pixel wide bar, has the same 18 lit bytes, sits at the same columns, and draws
+ * correctly. So this entry keeps the width and the row range of an image that IS known to draw.
+ *
+ * HOW TO CHECK A CHANGED GLYPH: press SW1. ui_draw_tuning_overlay in
+ * src\display_layer\ui_screen.c draws g_font_self_test, which is every hand-drawn mark between
+ * two capital I letters, at the same scaling 1.0 the story text uses.
  *
  * WIDTHS AND THE STORY WRAP. bg_font_18_text_width at the bottom of this file adds the same
  * widths up, and the screen wraps the story on that sum, so the wrap follows any width change
- * on its own. The apostrophe's width does not move, so nothing that was measured before
- * changes. The double quote used to fall through the safety net and be measured as a space,
- * width 7; it is now measured as 11, which is what it now draws. */
+ * on its own. A character with no entry is measured as a space, width 7. */
 
 #include "bg_font_18_full.h"
 
@@ -181,10 +168,9 @@ const uint32_t ascii_table_flash_size = sizeof(ascii_table_flash) / sizeof(st_gi
 
 static char myc;
 
-/* Bench fix 2 of 2026-08-19 cost a whole round because a missing glyph is INVISIBLE: the
- * safety net below draws a space, so the line still looks reasonable and nothing is logged,
- * crashed or counted. Read these two with the debugger after a long story - any non-zero count
- * names a character this table should carry.
+/* A MISSING GLYPH IS INVISIBLE: the safety net below draws a space, so the line still looks
+ * reasonable and nothing crashes. These two counters are the only trace it leaves. A non-zero
+ * count means this table should carry a character it does not.
  *
  * Printable ASCII only, because 6,510 of the model's 32,000 vocabulary pieces (20.3%) hold
  * bytes above 0x7E and those are EXPECTED to become spaces. Counting them would bury the one
@@ -219,8 +205,8 @@ void print_bg_font_18(d2_device *handle, d2_point _xs, d2_point _ys, float scali
     d2_point cur_y = _ys;
     size_t len;
 
-    /* The fork trusted its caller. A NULL string here would crash inside strlen, and the demo
-     * builds strings at run time. Nothing may stop the demo. */
+    /* A NULL string here would crash inside strlen, and the demo builds its strings at run
+     * time. Nothing may stop the demo. */
     if (NULL == _str)
     {
         return;
@@ -235,9 +221,8 @@ void print_bg_font_18(d2_device *handle, d2_point _xs, d2_point _ys, float scali
         img = (st_gimp_bg_font_18_image_t *)get_bg_font_18_buffer_pointer(myc);
 
         /* THE SAFETY NET: a character with no glyph is DRAWN AS A SPACE, so the cursor always
-         * advances and words never run together. The fork skipped it silently and left the
-         * cursor where it was, so an unknown mark glued the two words on either side of it
-         * together. */
+         * advances and words never run together. Skipping it would leave the cursor where it
+         * was, and an unknown mark would glue the two words on either side of it together. */
         if (NULL == img)
         {
             /* Record it, do not change what happens. This runs only when a glyph is ALREADY

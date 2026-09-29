@@ -2,32 +2,24 @@
  * File Name    : app_signal.h
  * Description  : The one place the demo talks to the operating system's signalling object.
  *
- * New file. Not copied from sample_code. The call forms inside app_signal.c are taken from the
- * vision fork (output_code\hand_gesture_five\src\camera_display_thread_entry.c:121, :174, :258,
- * src\ai_inference_thread_entry.c:114, :118, :126, src\camera_layer\camera_layer.c:606,
- * src\display_layer\display_layer.c:179, src\common_util.c:285).
- *
  * WHY THIS FILE EXISTS
  * --------------------
- * The signalling call sites are the largest item of the Stage 2 port: four task loops, five
- * interrupt callbacks and the once-per-frame observed-bit pass. Every one of them calls the
- * four functions below and nothing else. So the port to micro T-Kernel 3.0 rewrites ONE file,
- * app_signal.c, and no task, no callback and no screen file changes.
+ * The signalling call sites are spread widely: four task loops, five interrupt callbacks and
+ * the once-per-frame observed-bit pass. Every one of them calls the four functions below and
+ * nothing else, so the kernel's event-flag calls appear in ONE file, app_signal.c. No task, no
+ * callback and no screen file names a kernel object.
  *
  * THE RULES THIS INTERFACE HIDES
  * ------------------------------
- * 1. Clearing. FreeRTOS clears the bits you name; micro T-Kernel AND-masks, so it needs the
- *    complement. app_sig_clear() always takes THE BITS TO CLEAR. Only app_signal.c ever knows
- *    which way round the underlying call wants them. This is the easiest mistake in the port,
- *    in both directions.
- * 2. Timeouts. A timed-out FreeRTOS wait still returns a valid bit pattern, so a timeout has
- *    no error code. app_sig_released() is the one test for "the wait was released", and it is
- *    true at both stages.
- * 3. Width. A FreeRTOS event group has 24 usable bits, not 32. No bit above (1 << 23) may ever
- *    be used. The highest bit the design uses is EV_BTN2 = (1 << 19).
- * 5. Dropped bits. A bit set from an interrupt can be LOST at Stage 1. app_sig_set_isr()
- *    counts every drop, in one place, so a drop is never read as a lost interrupt.
- * (Difference 4, the stack-overflow hook, is not a signalling matter and is not handled here.)
+ * 1. Clearing. micro T-Kernel AND-masks the pattern it is given, so it needs the complement.
+ *    app_sig_clear() always takes THE BITS TO CLEAR. Only app_signal.c ever knows which way
+ *    round the underlying call wants them.
+ * 2. Timeouts. app_sig_released() is the one test for "the wait was released", because a
+ *    timeout is not reported to the caller as an error code.
+ * 3. Width. The highest bit the design uses is EV_BTN2 = (1 << 19). No bit above (1 << 23) may
+ *    ever be used; such a bit is refused and counted.
+ * 4. Failed sets. A set from an interrupt is counted when it fails, in one place, so it is
+ *    never read as a lost interrupt.
  *
  * The bit names themselves are EV_* in src\common_util.h.
  *********************************************************************************************************************/
@@ -43,11 +35,11 @@ extern "C" {
 #endif
 
 /* One or more EV_* bits from src\common_util.h.
- * A plain integer type on purpose: no caller has to include FreeRTOS or the kernel to
- * name a signal, so no call site changes at Stage 2. */
+ * A plain integer type on purpose: no caller has to include the kernel headers to name a
+ * signal. */
 typedef uint32_t app_sig_bits_t;
 
-/* Wait for ever. Stage 1 maps it to portMAX_DELAY, Stage 2 to TMO_FEVR. */
+/* Wait for ever. app_signal.c maps it to the kernel's TMO_FEVR. */
 #define APP_SIG_FOREVER    (0xFFFFFFFFU)
 
 /**********************************************************************************************************************
@@ -57,12 +49,10 @@ typedef uint32_t app_sig_bits_t;
 void app_sig_set(app_sig_bits_t bits);
 
 /**********************************************************************************************************************
- * Set bits from an interrupt callback, and ask for a context switch if one is due.
+ * Set bits from an interrupt callback.
  *
- * At Stage 1 this does NOT set the bits in the interrupt. It posts a message to the FreeRTOS
- * timer daemon task, which sets them later, so that task's priority is part of the design
- * - it must sit above all four application tasks. When the timer command queue is full the
- * bits are LOST; the loss is counted here and only here.
+ * The bits are set in the interrupt itself, immediately. A failed set is counted here and only
+ * here, so it is never read as a lost interrupt.
  *
  * @param[in] bits  one or more EV_* bits.
  *********************************************************************************************************************/
@@ -72,7 +62,7 @@ void app_sig_set_isr(app_sig_bits_t bits);
  * Block until every bit in mask is set, or until the timeout runs out.
  *
  * @param[in] mask        the bits waited for. All of them must be set to release the wait
- *                        (an AND-wait, TWF_ANDW at Stage 2). Never pass 0.
+ *                        (an AND-wait). Never pass 0.
  * @param[in] clear       true clears exactly the bits in mask on release, and nothing else.
  * @param[in] timeout_ms  milliseconds, or APP_SIG_FOREVER.
  * @return    the bit pattern reported by the wait. Test it with app_sig_released(); do not
@@ -91,9 +81,8 @@ void app_sig_clear(app_sig_bits_t bits);
 /**********************************************************************************************************************
  * Was the wait released, or did it time out?
  *
- * The one test for it, because the two operating systems report a timeout differently.
- * Stage 1: a timed-out wait returns the group's current bits, so the mask is tested. Stage 2:
- * app_sig_wait returns 0 on E_TMOUT and the same test still holds, because a mask is never 0.
+ * The one test for it. app_sig_wait returns 0 when the wait timed out, and a mask is never 0,
+ * so testing the mask is enough.
  *
  * @param[in] pattern  what app_sig_wait returned.
  * @param[in] mask     the mask that was passed to app_sig_wait.
@@ -105,15 +94,15 @@ static inline bool app_sig_released(app_sig_bits_t pattern, app_sig_bits_t mask)
 }
 
 /**********************************************************************************************************************
- * Failure reporting. These three are not signalling calls; they exist because a dropped bit
- * has to be counted separately from the wait timeouts and printed with the bit name. They
- * compile unchanged at Stage 2, where tk_set_flg cannot fail and the count therefore stays 0.
+ * Failure reporting. These three are not signalling calls; they exist because a failed set has
+ * to be counted separately from the wait timeouts and printed with the bit name. Once the event
+ * flag exists the set cannot fail, so the count normally stays 0.
  *********************************************************************************************************************/
 
-/* How many times app_sig_set_isr could not deliver its bits. */
+/* How many times app_sig_set_isr could not deliver its bits. Normally 0. */
 uint32_t app_sig_drops_get(void);
 
-/* Every bit that has ever been dropped, OR-ed together. 0 when nothing was dropped. */
+/* Every bit whose set ever failed, OR-ed together. 0 when nothing failed. */
 app_sig_bits_t app_sig_drop_bits_get(void);
 
 /* Name of ONE bit, for the console line. Returns "?" for 0, for more than one bit, and for

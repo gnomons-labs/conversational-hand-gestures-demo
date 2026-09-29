@@ -2,23 +2,14 @@
  * File Name    : task_ai.c
  * Description  : T_AI - palm model, landmark model, gesture rules, the gesture event.
  *
- * New file.
- *
- * DERIVED FROM: output_code\hand_gesture_five\src\ai_inference_thread_entry.c (itself from
- * sample_code\ek_ra8p1_vision_palm_detection_hand_landmarkmodel_gesture_recognition_camera_
- * LCD_FSP640\src\ai_inference_thread_entry.c). The inference half is unchanged. Four things
- * are new:
+ * DERIVED FROM the inference thread of the Renesas vision AI palm-detection and hand-landmark
+ * sample for the EK-RA8P1. The inference half of that code is unchanged. Four things are new:
  *   the signalling goes through app_sig_*
  *   the start-up Octo-SPI latch is read before the model is opened
  *   gesture_track_update is called once per NEW result
  *   the first input after the models come back on is discarded
  *
- * WHEN THIS FILE GOES LIVE, ai_inference_thread_entry.c MUST LEAVE THE BUILD. Both files
- * define model_buffer_int8, g_ai_detection, g_landmark_results, update_detection_result and
- * update_landmark_result, so keeping both is a duplicate-symbol link error.
- *
- * Stage 1 shape: entry function of the configurator Thread object "ai_thread", FreeRTOS
- * priority 3, stack 16,384 bytes.
+ * T_AI runs at itskpri 6 with a 16,384-byte stack. Both are set in src\app_main.c.
  *********************************************************************************************************************/
 
 #include <stdio.h>
@@ -44,8 +35,8 @@
 #include "app_signal.h"
 #include "conv_state.h"
 
-/* The vendor header that registers the TensorFlow Lite Micro log callback. Same include the
- * fork makes, and it must stay below the others because it is C++-flavoured plain C. */
+/* The vendor header that registers the TensorFlow Lite Micro log callback. It must stay below
+ * the others, because it is C++-flavoured plain C. */
 #include "tensorflow/lite/micro/cortex_m_generic/debug_log_callback.h"
 
 /**********************************************************************************************************************
@@ -59,8 +50,8 @@ extern vision_ai_app_err_t palm_detection(void);
  * Exported global variables and functions (to be accessed by other files)
  *********************************************************************************************************************/
 
-/* The model's input picture. T_CAM fills it, T_AI reads it. Placed by the same switch the fork
- * uses, which keeps it in synchronous dynamic random access memory. */
+/* The model's input picture. T_CAM fills it, T_AI reads it. The switch below keeps it in
+ * synchronous dynamic random access memory. */
 #if (AI_INPUT_IMAGE_ALLOCATION == ALLOCATE_TO_ONCHIP_RAM)
 int8_t model_buffer_int8[AI_INPUT_IMAGE_WIDTH * AI_INPUT_IMAGE_HEIGHT * AI_INPUT_IMAGE_BYTE_PER_PIXEL] BSP_ALIGN_VARIABLE(32);
 #elif (AI_INPUT_IMAGE_ALLOCATION == ALLOCATE_TO_SDRAM)
@@ -106,7 +97,7 @@ static bool     g_ai_models_open    = false;
 static void ai_print_log(const char * s);
 
 /**********************************************************************************************************************
- * TensorFlow Lite Micro sends its own messages here. Unchanged from the fork.
+ * TensorFlow Lite Micro sends its own messages here.
  * @param[in] s  one message, with no line ending
  *********************************************************************************************************************/
 static void ai_print_log(const char * s)

@@ -87,9 +87,8 @@ fsp_err_t display_init(void)
     fsp_status = R_GLCDC_Open(&g_lcd_glcdc_ctrl, &g_lcd_glcdc_cfg);
     if (FSP_SUCCESS != fsp_status)
     {
-        /* APP_FATAL. The fork's ERROR_INDICATE was LED3 plus BKPT #0, and a
-         * breakpoint with no debugger attached is a dead board. handle_error prints, lights LED3
-         * and stays in the slow blink loop. It does not return. */
+        /* APP_FATAL. handle_error prints, lights LED3 and stays in the slow blink loop. It
+         * does not return, and it does not stop at a breakpoint. */
         (void) handle_error(VISION_AI_APP_ERR_GLCDC_OPEN, "display_init R_GLCDC_Open");
     }
 
@@ -199,20 +198,14 @@ static uint32_t last_lcd_glcdc_frame_end = 0;
 /**********************************************************************************************************************
  * Graphics controller line-detect interrupt: one panel refresh.
  *
- * The bit name changes and the operating-system call moves behind app_sig_set_isr. The
- * frame-period measurement stays.
+ * The signalling goes through app_sig_set_isr. The frame-period measurement is taken here.
  *
- * THE DEAD 120-FRAME COUNTER IS DELETED. It counted 120 vertical synchronisation periods and
- * then called mipi_dsi_enable_backlight(), which does not exist in this project - the only
- * commented-out copies are in the vendor sample and in the fork output_code\hand_gesture_five,
- * not in this file and not anywhere under src\. So the counter really did nothing at all.
+ * THERE IS NO BACKLIGHT COMMAND AND NONE IS NEEDED. mipi_dsi_enable_backlight() does not exist
+ * in this project.
  *
- * THE PANEL IS NOT LIT "WITHOUT A BACKLIGHT". It is lit by the LCD_BLEN pin write in
- * display_init() above (R_IOPORT_PinWrite at display_layer.c:103, in this same file), not by
- * any display-interface command. DO NOT REMOVE THAT LINE: an earlier wording here was the
- * twin of the sentence already corrected in src\tasks\task_ui.c, and it invited the same
- * failure - someone deletes the pin write, gets a dark panel, and hunts a graphics-controller
- * fault.
+ * THE PANEL IS LIT BY A PIN: the LCD_BLEN write in display_init() above (R_IOPORT_PinWrite, in
+ * this same file), not by any display-interface command. DO NOT REMOVE THAT LINE, or the panel
+ * goes dark and the fault looks like a graphics-controller fault.
  *********************************************************************************************************************/
 void lcd_glcdc_callback(display_callback_args_t *p_args)
 {
@@ -258,8 +251,8 @@ void lcd_glcdc_callback(display_callback_args_t *p_args)
  * display frame N's drawing as it happens: every zone clear and every text line, live. That is
  * the flicker, not the cure for it.
  *
- * WHY THE VSYNC BIT IS CLEARED HERE (this is the bench fix of 2026-08-14).
- * -----------------------------------------------------------------------
+ * WHY THE VSYNC BIT IS CLEARED HERE.
+ * ---------------------------------
  * The change asked for below takes effect on the next Vsync, and the graphics controller REFUSES
  * a second change while the first one is still pending: R_GLCDC_BufferChange returns
  * FSP_ERR_INVALID_UPDATE_TIMING when GR[layer].VEN.PVEN is still 1
@@ -267,7 +260,7 @@ void lcd_glcdc_callback(display_callback_args_t *p_args)
  *
  * T_UI waits for EV_VSYNC once per frame, and that wait clears the bit on release. But the line
  * detect interrupt keeps arriving while T_UI is drawing - one drawing pass easily outlasts a
- * 16.7 ms panel refresh, above all when T_CAM at priority 4 and T_AI at priority 3 preempt it.
+ * 16.7 ms panel refresh, above all when the higher-priority T_CAM and T_AI preempt it.
  * The bit is then already set when T_UI comes back round, so the next wait returns AT ONCE and a
  * second frame is drawn and offered inside the same refresh. The second change is refused, the
  * panel keeps the older address, and the frame after it is painted straight into the buffer the
@@ -312,12 +305,11 @@ void graphics_swap_buffer()
  *  @param[IN]   None
  *  @retval      the address of the buffer that is NOT the current drawing target
  *
- * NOTHING IN THIS PROJECT CALLS THIS. It is kept because it is part of the display layer this
- * demo inherited from the vendor sample. Its meaning did not move with the 2026-08-14 flicker
- * fix, because the index order in graphics_swap_buffer did not move either: between one swap and
- * the next, drw_buf is the buffer the next list will paint, so the index returned here is the
- * buffer the panel is scanning. A caller that wants the finished picture wants this one; a caller
- * that wants the buffer being painted wants fb_background[drw_buf] instead.
+ * NOTHING IN THIS PROJECT CALLS THIS. It is kept because it is part of the display layer the
+ * demo takes from the vendor sample. Between one swap and the next, drw_buf is the buffer the
+ * next list will paint, so the index returned here is the buffer the panel is scanning. A caller
+ * that wants the finished picture wants this one; a caller that wants the buffer being painted
+ * wants fb_background[drw_buf] instead.
 ***********************************************************************************************************************/
 uint32_t graphics_backup_buffer_pointer_get(void)
 {
@@ -354,34 +346,29 @@ void graphics_start_frame()
 /**********************************************************************************************************************
  * WAIT FOR THE 2D ENGINE WITHOUT BURNING THE PROCESSOR.
  *
- * NEW, added 2026-08-21 after the port was found running much slower than the source demo.
- *
  * WHAT GOES WRONG WITHOUT IT.
  * d2_endframe waits for the previous frame's display list through d2_flushframe -> d2hw_finish
  * (ra\tes\dave2d\src\dave_hardware.c:107-131), which loops on the D2_STATUS busy bit and calls
- * d1_queryirq(hwId, d1_irq_dlist, 200) inside the loop. Under FreeRTOS that call was
- * xSemaphoreTake(g_d1_queryirq_sem, 200) - T_UI BLOCKED and the processor went to the other
- * tasks (ra\fsp\src\r_drw\r_drw_irq.c:155-166). With BSP_CFG_RTOS at 0 the same call becomes
+ * d1_queryirq(hwId, d1_irq_dlist, 200) inside the loop. With BSP_CFG_RTOS at 0 that call is
  *     while (!g_dlist_done && timeout) { timeout--; }
- * (r_drw_irq.c:176-190), and `timeout` changes meaning from 200 milliseconds to 200 raw loop
- * iterations - a few microseconds at 1 GHz. So d2hw_finish turns into a full-speed poll of the
- * drawing engine's status register, and T_UI - priority 7, above T_STORY at 12 - keeps the
- * processor for the whole time the engine is drawing. T_STORY gets nothing, and the token rate
- * collapses.
+ * (ra\fsp\src\r_drw\r_drw_irq.c:176-190), where `timeout` means 200 raw loop iterations, not
+ * 200 milliseconds - a few microseconds at 1 GHz. So d2hw_finish becomes a full-speed poll of
+ * the drawing engine's status register, and T_UI, which is above T_STORY, keeps the processor
+ * for the whole time the engine is drawing. T_STORY gets nothing and the token rate collapses.
  *
  * WHAT THIS DOES.
  * Wait for the same D2C_DLISTACTIVE bit d2hw_finish waits for, but yield between polls, so the
- * lower-priority tasks run exactly as they did under FreeRTOS. By the time d2_endframe is
- * called the engine is already idle, so its own loop exits on the first status read and the
- * busy poll never runs. NO FILE UNDER ra\ IS EDITED.
+ * lower-priority tasks run. By the time d2_endframe is called the engine is already idle, so its
+ * own loop exits on the first status read and the busy poll never runs. NO FILE UNDER ra\ IS
+ * EDITED.
  *
  * A short spin comes first because the steady state is "already finished": display_layer.c's
  * own frame note above says the list d2_endframe waits for has had a whole panel refresh to
  * complete. When that holds this function costs a handful of register reads and no delay at all.
  *
- * THE BOUND IS THE SAME 200 THE DRIVER USED, now honestly in milliseconds. If it ever expires
- * this function simply returns and d2_endframe waits the old way, so the failure behaviour is
- * never worse than before.
+ * THE BOUND IS THE SAME 200 THE DRIVER USES, here in milliseconds. If it ever expires this
+ * function simply returns and d2_endframe waits in its own way, so the failure behaviour is
+ * never worse.
  *
  * D2C_DLISTACTIVE is BIT(3), from ra\tes\dave2d\src\dave_registermap.h:187 - a private driver
  * header that cannot be included from here, so the value is repeated with its source named.

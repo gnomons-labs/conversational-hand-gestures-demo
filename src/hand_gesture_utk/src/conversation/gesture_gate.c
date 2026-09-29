@@ -2,8 +2,8 @@
  * File Name    : gesture_gate.c
  * Description  : The six hold rules that decide when a hand shape may be accepted.
  *
- * New file. Not copied from sample_code. The structure, the four function signatures and the
- * six rule constants are in gesture_gate.h.
+ * The structure, the four function signatures and the six rule constants are in
+ * gesture_gate.h.
  *
  * WHAT THE SIX RULES ARE, IN ONE PLACE
  * ------------------------------------
@@ -273,7 +273,7 @@ gesture_t gate_take(gesture_gate_t * g, conv_state_t st, uint32_t now_ms)
     }
 
     /* RULE 6, and this is the only place the thumbs up is treated differently from the other
-     * four shapes. Decided by the user on 2026-08-07. */
+     * four shapes. */
     if (row->long_hold &&
         (GESTURE_THUMBS_UP == candidate) &&
         (GESTURE_THUMBS_UP == g->held_shape) &&

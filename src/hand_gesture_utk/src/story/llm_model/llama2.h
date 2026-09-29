@@ -549,7 +549,7 @@ typedef struct {
 
 typedef struct {
     char** vocab;
-    char*  vocab_blob;   /* EDIT 6: one block holding all 32,000 token strings end to end */
+    char*  vocab_blob;   /* one block holding all 32,000 token strings end to end */
     float* vocab_scores;
     TokenIndex *sorted_vocab;
     int vocab_size;
@@ -570,7 +570,7 @@ int compare_tokens(const void *a, const void *b) {
  * 128,000-byte arrays for the pointers and the scores are unchanged.
  *
  * WHY. The allocation count for the story side falls from about 32,020 to about 20, which is
- * what keeps the heap from fragmenting and what makes the Stage 2 memory pool workable.
+ * what keeps the memory pool from fragmenting.
  *
  * WHAT IT COSTS. One block of sizeof(tokenizer_bin) = 433,870 bytes against about 209,865 bytes
  * of actual string content, so it ADDS about 224,000 bytes before counting back the roughly
@@ -580,9 +580,6 @@ int compare_tokens(const void *a, const void *b) {
  * THE SIGNATURE GAINS ONE ARGUMENT, blob_bytes, because that "size that cannot be wrong" is
  * sizeof(tokenizer_bin), and tokenizer.h is included after this file by llama4micro.cpp, so
  * this function cannot read it for itself. There is exactly one caller.
- *
- * TO REVERT: delete the block allocation, put the '#if 0' loop below back, and drop the
- * blob_bytes argument and Tokenizer::vocab_blob.
  * ------------------------------------------------------------------------------------------ */
 void build_tokenizer(Tokenizer* t,
                      uint8_t* tokenizer_buffer, int vocab_size, size_t blob_bytes) {
@@ -632,7 +629,7 @@ void build_tokenizer(Tokenizer* t,
 }
 
 void free_tokenizer(Tokenizer* t) {
-    /* EDIT 6: one release instead of 32,000. */
+    /* One release instead of 32,000. */
     free(t->vocab_blob);
     free(t->vocab);
     free(t->vocab_scores);
@@ -653,16 +650,12 @@ char* decode(Tokenizer* t, int prev_token, int token) {
 }
 
 /* ---------------------------------------------------------------------------------------------
- * The fork's safe_printf becomes story_emit, which sends every piece of text TO BOTH the
- * screen and the console, because the demo needs both: the three rolling lines on the panel,
- * and the whole story on the serial terminal, one piece at a time, exactly as the sample does
- * today.
+ * story_emit sends every piece of text TO BOTH the screen and the console, because the demo
+ * needs both: the three rolling lines on the panel, and the whole story on the serial terminal,
+ * one piece at a time.
  *
- * The unsafe-byte filter is the fork's own and is unchanged: a raw byte token that is neither
- * printable nor whitespace is dropped, so a control code never reaches the terminal or the font
- * lookup.
- *
- * TO REVERT: rename it back to safe_printf and make the last two lines printf("%s", piece).
+ * The unsafe-byte filter is the generator's own: a raw byte token that is neither printable nor
+ * whitespace is dropped, so a control code never reaches the terminal or the font lookup.
  * ------------------------------------------------------------------------------------------ */
 void story_emit(char *piece) {
     // piece might be a raw byte token, and we only want to print printable chars or whitespace
@@ -676,10 +669,10 @@ void story_emit(char *piece) {
         }
     }
     story_text_put(piece);      /* the screen: T_UI drains this ring buffer once per frame */
-    print_to_console(piece);    /* the terminal, exactly as the fork did                   */
+    print_to_console(piece);    /* the serial terminal                                     */
 }
 
-/* True when this piece of text ends a sentence. Used by edit 5 below. */
+/* True when this piece of text ends a sentence. Used by the sentence-end stop below. */
 static int story_piece_ends_sentence(const char *piece) {
     size_t n;
     if (piece == NULL) { return 0; }
@@ -995,11 +988,8 @@ void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, 
     }
 
     // start the main loop
-    // "long start" is deleted. It was the upstream timer, and the timing moved out to
-    // TellStory, which brackets this call with
-    // TimeCounter_CurrentCountGet(). Nothing in this function ever read it, so it was only a
-    // warning ("unused variable 'start'", 2026-08-14 build log) and a false trail for a reader
-    // looking for where the elapsed time comes from.
+    // There is no timer in this function. The timing is taken in TellStory, which brackets
+    // this call with TimeCounter_CurrentCountGet().
     int next;        // will store the next token in the sequence
     int token = prompt_tokens[0]; // kick off with the first token in the prompt
     int pos = 0;     // position in the sequence
@@ -1023,18 +1013,17 @@ void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, 
 
         // print the token as string, decode it with the Tokenizer object
         char* piece = decode(tokenizer, token, next);
-        story_emit(piece); // EDIT 4: to the screen AND the console, unsafe bytes still skipped
+        story_emit(piece); // to the screen AND the console, unsafe bytes skipped
         fflush(stdout);
         token = next;
 
         /* THE SENTENCE-END STOP, an addition of the demo's own: after token
          * STORY_SENTENCE_STOP_POS the story stops at the first piece that ends a sentence, so a
          * story that runs to the 128-token ceiling rarely stops in the middle of a word. The
-         * generator's own end-of-sequence stop above is untouched.
-         * TO REVERT: delete this if. */
+         * generator's own end-of-sequence stop above is untouched. */
         if (pos > STORY_SENTENCE_STOP_POS && story_piece_ends_sentence(piece)) { break; }
 
-        /* T_UI gave up on this story after fifteen seconds with no new text, or the booth reset
+        /* T_UI gave up on this story after fifteen seconds with no new text, or the demo reset
          * was pressed (story_abandon in src\tasks\task_story.c). story_abandon only sets the
          * wish; this is the one place inside the token loop that can act on it. */
         if (story_abandon_requested()) { break; }

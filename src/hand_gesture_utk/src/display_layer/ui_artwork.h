@@ -2,19 +2,12 @@
  * File Name    : ui_artwork.h
  * Description  : The pictures, the expression table and the picture lookup.
  *
- * New file. Not copied from sample_code.
+ * WHAT THIS FILE IS FOR. It is the one place that decides what a picture looks like.
+ * ui_screen.c asks for a picture and draws it, and never learns whether the picture is real
+ * artwork or a drawn placeholder.
  *
- * WHAT THIS FILE IS FOR. Eight of the twenty-three pictures the demo needs had no files: the
- * three throw pictures and the five hand-shape hint icons. The user decided on 2026-08-12 that
- * all eight were DRAWN PLACEHOLDERS at Stage 1. This interface is what kept that decision out
- * of the screen code: ui_screen.c asks for a picture and draws it, and never learns whether the
- * picture is real.
- *
- * UPDATED 2026-08-21: THE REAL PICTURES ARRIVED. The user supplied five hand PNG files in
- * assets\hand_gestures on 2026-08-18, and the interface did what it was built to do - the two
- * tables in ui_artwork.c gained the eight pointers and NO SCREEN CODE CHANGED. The placeholder
- * path is NOT dead code: APP_DEGRADE_EXTERNAL mode still calls ui_art_set_available(false), and
- * then every picture in the demo falls back to it.
+ * THE PLACEHOLDER PATH IS NOT DEAD CODE. APP_DEGRADE_EXTERNAL mode calls
+ * ui_art_set_available(false), and then every picture in the demo falls back to it.
  *********************************************************************************************************************/
 
 #ifndef UI_ARTWORK_H_
@@ -36,9 +29,8 @@ extern "C" {
  * one entry that is not a state: every failure that keeps the screen shows it. So the failure
  * handling invents no artwork.
  *
- * At Stage 1 each of these is one whole still picture, chosen by the face table in
- * ui_artwork.c. At Stage 2 the same names become one eye picture plus one mouth picture, and
- * nothing outside ui_artwork.c has to change.
+ * Each of these is one whole still picture, chosen by the face table in ui_artwork.c. Nothing
+ * outside that file knows which picture an expression uses.
  *********************************************************************************************************************/
 typedef enum e_expr
 {
@@ -102,10 +94,10 @@ void ui_art_draw(const ui_image_t * img, int x, int y, uint8_t alpha);
  * covers the faces too, and the screen code still knows nothing about it. This call is how the
  * degraded mode reaches the one place that decides what a picture looks like.
  *
- * UPDATED 2026-08-21: the three throw pictures and the five hint icons are real artwork now, in
- * the same section and reached the same way, so ui_art_throw and ui_art_hint are gated by this
- * call as well. With true it also cleans all fifteen arrays out of the data cache, once, so the
- * drawing engine reads what the reset copy wrote.
+ * The three throw pictures and the five hint icons sit in the same section and are reached the
+ * same way, so ui_art_throw and ui_art_hint are gated by this call as well. With true it also
+ * cleans all fifteen arrays out of the data cache, once, so the drawing engine reads what the
+ * reset copy wrote.
  *
  * @param[in] ok  true when g_startup_ospi_err is FSP_SUCCESS
  *********************************************************************************************************************/

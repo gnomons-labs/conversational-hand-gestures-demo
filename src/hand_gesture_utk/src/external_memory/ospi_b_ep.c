@@ -8,31 +8,16 @@
 * SPDX-License-Identifier: BSD-3-Clause
 ***********************************************************************************************************************/
 /***********************************************************************************************************************
- * DERIVED FROM : output_code\ra8p1_llm_ospi_hs\src\external_memory\ospi_b_ep.c - the story fork, which itself came
- *                from the Renesas OSPI_B example project. Copied into hand_gesture_demo for Stage 1 of the hand
- *                gesture demo.
+ * DERIVED FROM : the Renesas OSPI_B example project for the RA family.
  *
- * EDITED HERE  : three changes only.
- *
- *   1. The two Octo-SPI clock dividers, inside the BOARD_RA8P1_EK branches. Each divider
- *      carries its own note. The RA8D1, RA8M1 and RA8E2 branches are other boards and are left untouched.
- *
- *   1b. The two Octo-SPI clock SOURCE constants in the same two
- *      BOARD_RA8P1_EK branches change from BSP_CLOCKS_SOURCE_CLOCK_PLL2P to BSP_CLOCKS_SOURCE_CLOCK_PLL2R. PLL2R is
- *      already 240 MHz in the merged clock tree, so no configurator property moves. The earlier plan took PLL2P and
- *      divided the PLL2 loop by 5; that route does not exist on this part, because PL2ODIVP allows only /2, /3, /4,
- *      /6, /8 and /16 (hardware manual section 9.2.10, register PLL2CCR2). PLL2P stays at /4 = 300 MHz and unused.
- *
- *   2. THE STORY FORK'S THROUGHPUT BENCHMARK IS REMOVED. Gone are timer_init(), timer_start_measure(), timer_get_measure(),
- *      ospi_b_operation() and the three helpers ospi_b_erase_operation(), ospi_b_write_operation() and
- *      ospi_b_read_operation(), plus the g_read_data and g_write_data test buffers and the RTT Viewer menu
- *      macros that only they used. That code opened an FSP General PWM Timer instance named g_timer, which this
- *      project does not have, so the merged build would not link. Nothing in the merged demo ever called it.
- *      NO timer instance was added, so no timer channel and no interrupt slot is spent and the resource budget
- *      is untouched.
+ * THE OCTO-SPI CLOCK ON THIS BOARD : the BOARD_RA8P1_EK branches take BSP_CLOCKS_SOURCE_CLOCK_PLL2R, which is
+ *                      240 MHz in this project's clock tree. PLL2P cannot reach 240 MHz on this part, because
+ *                      PL2ODIVP allows only /2, /3, /4, /6, /8 and /16 (hardware manual section 9.2.10, register
+ *                      PLL2CCR2). Each divider below carries its own note. The RA8D1, RA8M1 and RA8E2 branches are
+ *                      other boards and are left untouched.
  *
  * WHAT THE DEMO USES : src\hal_entry.c enters this file at ospi_b_init() and ospi_b_set_protocol_to_opi() only.
- *                      ospi_b_init() calls ospi_b_setup_calibrate_data(). Everything they reach is kept.
+ *                      ospi_b_init() calls ospi_b_setup_calibrate_data().
  **********************************************************************************************************************/
 
 #include "common_utils.h"
@@ -46,9 +31,6 @@
 
 /* External variable */
 extern spi_flash_direct_transfer_t g_ospi_b_direct_transfer [OSPI_B_TRANSFER_MAX];
-
-/* Global variables */
-/* The g_read_data and g_write_data benchmark buffers were removed with the benchmark. */
 
 /* Function declarations */
 static fsp_err_t ospi_b_write_enable(void);
@@ -125,9 +107,6 @@ static fsp_err_t ospi_b_wait_operation(uint32_t timeout)
     }
     return err;
 }
-
-/* ospi_b_erase_operation(), ospi_b_write_operation() and ospi_b_read_operation() stood here. They were the
- * story fork's timed erase, write and read helpers. All three were removed with the benchmark. */
 
 /*******************************************************************************************************************//**
  * @brief       This functions initializes OSPI module and Flash device.
@@ -298,8 +277,7 @@ fsp_err_t ospi_b_set_protocol_to_spi(void)
         octaclk.divider      = BSP_CLOCKS_OCTA_CLOCK_DIV_2;
         R_BSP_OctaclkUpdate(&octaclk);
 #elif defined (BOARD_RA8P1_EK)
-        /* MERGED PROJECT (hand_gesture_demo).
-         * PLL2R /2 = 120 MHz Octo-SPI clock. This function is not called by the demo. */
+        /* PLL2R /2 = 120 MHz Octo-SPI clock. This function is not called by the demo. */
         octaclk.source_clock = BSP_CLOCKS_SOURCE_CLOCK_PLL2R;
         octaclk.divider      = BSP_CLOCKS_OCTA_CLOCK_DIV_2;
         R_BSP_OctaclkUpdate(&octaclk);
@@ -394,12 +372,11 @@ fsp_err_t ospi_b_set_protocol_to_opi(void)
         err = R_OSPI_B_DirectTransfer(&g_ospi_b_ctrl, &transfer, SPI_FLASH_DIRECT_TRANSFER_DIR_WRITE);
         APP_ERR_RETURN(err, "R_OSPI_B_DirectTransfer API FAILED\r\n");
 
-        /* MERGED PROJECT (hand_gesture_demo).
-         * Octo-SPI clock source is PLL2R, already 240 MHz in this tree
+        /* Octo-SPI clock source is PLL2R, already 240 MHz in this tree
          * (PLL2R = PLL2 loop 1200 MHz /5). PLL2P cannot reach 240 MHz on this part,
          * because PL2ODIVP has no /5. Divider /1 gives a 240 MHz Octo-SPI clock and a
-         * 120 MHz flash clock, which is the clock the 3.69 tokens per second was
-         * measured at. */
+         * 120 MHz flash clock, which is what the story generator's throughput figure
+         * assumes. */
         octaclk.source_clock = BSP_CLOCKS_SOURCE_CLOCK_PLL2R;
         octaclk.divider      = BSP_CLOCKS_OCTA_CLOCK_DIV_1;
         R_BSP_OctaclkUpdate(&octaclk);
@@ -467,11 +444,6 @@ fsp_err_t ospi_b_read_device_id (uint32_t * const p_id)
     *p_id = transfer.data;
     return err;
 }
-
-/* ospi_b_operation() stood here, followed by timer_start_measure(), timer_get_measure() and timer_init().
- * ospi_b_operation() was the story fork's benchmark entry point: an RTT Viewer menu that ran timed erase, write
- * and read operations. The three timer functions drove an FSP General PWM Timer instance named g_timer, which
- * this project does not have. Nothing in the merged demo called any of them, so all four were removed. */
 
 /*******************************************************************************************************************//**
  * @brief       This function sets up the auto-calibrate data for the flash.

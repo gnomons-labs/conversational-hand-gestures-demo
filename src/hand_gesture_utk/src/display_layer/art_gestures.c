@@ -11,7 +11,7 @@
  * seven faces that is 3,041,280 bytes against the 4,194,304 byte artwork budget, which is
  * 72.5 per cent of it.
  *
- * The attribute pair below is the one the vision fork uses for its model blobs
+ * The attribute pair below is the one the model blobs use
  * (src\hand_gestures\ruhmi_conversion_results\sub_0000_model_data.c:7), so these arrays land
  * in Octo-SPI flash and the start-up copy moves them into SDRAM.
  *********************************************************************************************************************/

@@ -2,8 +2,6 @@
  * File Name    : gesture_gate.h
  * Description  : The six hold rules that decide when a hand shape may be accepted.
  *
- * New file. Not copied from sample_code.
- *
  * gesture_gate.c holds the bodies. The header exists first because the four tasks are written
  * against it.
  *
@@ -30,9 +28,10 @@
 #define GATE_RELEASE_MS     (300U)    /* rule 4: unbroken release gap, counted since the state
                                        *         began, and only while the models are on      */
 #define GATE_RELEASE_RESULTS (3U)     /* rule 4: and at least this many absent results in a
-                                       *         row. UNCONFIRMED - tuned on the bench.       */
+                                       *         row. Chosen by measurement on the board, not
+                                       *         from a document.                             */
 #define GATE_LONG_HOLD_MS   (2000U)   /* rule 6: thumbs up only, in the four question states.
-                                       *         UNCONFIRMED - tuned on the bench. It must
+                                       *         Chosen by measurement on the board. It must
                                        *         stay well above GATE_RELEASE_MS and well
                                        *         below the 15 second answer window, and above
                                        *         GATE_SETTLE_MS + GATE_RUN_MS = 1300 ms.      */

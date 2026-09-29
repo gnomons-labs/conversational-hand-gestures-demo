@@ -2,24 +2,16 @@
  * File Name    : task_cam.c
  * Description  : T_CAM - camera frames in, letterbox picture out.
  *
- * New file.
- *
- * DERIVED FROM: output_code\hand_gesture_five\src\camera_display_thread_entry.c (itself from
- * sample_code\ek_ra8p1_vision_palm_detection_hand_landmarkmodel_gesture_recognition_camera_
- * LCD_FSP640\src\camera_display_thread_entry.c). The camera half of that file is kept almost
- * as it stands - the letterbox pre-process below is its code unchanged. Three things are taken
- * out and given to other tasks:
+ * DERIVED FROM the camera and display thread of the Renesas vision AI palm-detection and
+ * hand-landmark sample for the EK-RA8P1. The camera half of that code is kept almost as it
+ * stands - the letterbox pre-process below is unchanged. Three things live elsewhere:
  *   the console, the buttons, the drawing engine and the panel   -> T_UI  (task_ui.c)
- *   the screen drawing (do_detection_screen)                     -> T_UI  (ui_screen.c)
+ *   the screen drawing                                           -> T_UI  (ui_screen.c)
  *   the per-frame console dumps                                  -> dropped
  *
- * WHEN THIS FILE GOES LIVE, camera_display_thread_entry.c MUST LEAVE THE BUILD. Both files
- * define g_palm_preprocess_meta, so keeping both is a duplicate-symbol link error.
- *
- * Stage 1 shape: this is the entry function of the configurator
- * Thread object "cam_thread", FreeRTOS priority 4, stack 4,096 bytes, and it is the first
- * application thread the scheduler runs, so it performs the Flexible Software Package common
- * initialisation before the code below starts. It then waits for T_UI.
+ * T_CAM runs at itskpri 5, the highest of the four, with a 4,096-byte stack. Both are set in
+ * src\app_main.c. It is the first application task the kernel runs, and it waits for T_UI
+ * before the code below starts.
  *********************************************************************************************************************/
 
 #include <stdio.h>
@@ -100,7 +92,6 @@ static void cam_report_timeout(void)
 /**********************************************************************************************************************
  * Build the model's 192 x 192 x 3 letterbox picture out of the 640 x 480 camera picture.
  *
- * Unchanged from output_code\hand_gesture_five\src\camera_display_thread_entry.c:190-241.
  * Nearest neighbour, integer arithmetic, red-green-blue 565 in and signed 8-bit out.
  * scale = min(192/640, 192/480) = 0.3, so the resized picture is 192 x 144 with 24 rows of
  * padding above and below.

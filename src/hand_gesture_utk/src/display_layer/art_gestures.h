@@ -6,21 +6,17 @@
  * Written by tools\make_gesture_art.py from the five pictures in assets\hand_gestures, which
  * are READ ONLY. Run the script again if the artwork changes.
  *
- * These are the last eight of the twenty-three pictures the demo draws. All eight were DRAWN
- * PLACEHOLDERS at first because no files existed; the user supplied the files on 2026-08-18,
- * so the placeholders are replaced. One table in ui_artwork.c gains the pointers and NO SCREEN
- * CODE CHANGES.
+ * These are the last eight of the twenty-three pictures the demo draws.
  *
  * THREE PICTURES APPEAR TWICE, at two sizes. The rock, paper and scissors throws ARE the fist,
- * palm and victory hand shapes - the team leader's decision of 2026-08-21 - so one source file
- * gives both a 384 x 384 throw array and a 96 x 96 hint array. They are NOT scaled on the board:
- * ui_art_draw blits 1:1.
+ * palm and victory hand shapes, so one source file gives both a 384 x 384 throw array and a
+ * 96 x 96 hint array. They are NOT scaled on the board: ui_art_draw blits 1:1.
  *
  * The pictures live in Octo-SPI flash and the start-up copy of .sdram_from_ospi0_cs1 moves them
- * into SDRAM before any task runs, so nothing here is read from flash while the demo runs
- * runs. The copy runs in single-lane mode, before the high-speed switch, so these pictures are
- * off the byte-order swap path and are NOT pre-swapped - exactly as art_faces.h records for
- * the seven faces.
+ * into SDRAM before any task runs, so nothing here is read from flash while the demo runs. The
+ * copy runs in single-lane mode, before the high-speed switch, so these pictures are off the
+ * byte-order swap path and are NOT pre-swapped - exactly as art_faces.h records for the seven
+ * faces.
  *
  * WHICH PICTURE STANDS FOR WHICH GESTURE IS NOT HERE. That mapping is the two tables in
  * ui_artwork.c, which are indexed by gesture_t, so this file stays a plain list of pictures and

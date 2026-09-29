@@ -18,9 +18,9 @@
 FSP_CPP_HEADER
 void print_bg_font_18(d2_device *handle, d2_point _xs, d2_point _ys, float scaling, char *_str);
 
-/* How wide a string is in pixels at one scaling, summed from the real glyph widths.
- * Added 2026-08-13 so the screen measures the story wrap width in code rather than assuming a
- * fixed character width. See the body in bg_font_18_full.c. */
+/* How wide a string is in pixels at one scaling, summed from the real glyph widths, so the
+ * screen measures the story wrap width instead of assuming a fixed character width. See the
+ * body in bg_font_18_full.c. */
 uint32_t bg_font_18_text_width(const char *_str, float scaling);
 FSP_CPP_FOOTER
 

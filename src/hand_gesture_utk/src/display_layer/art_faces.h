@@ -1,6 +1,6 @@
 /**********************************************************************************************************************
  * File Name    : art_faces.h
- * Description  : The seven whole still faces of Stage 1.
+ * Description  : The seven still faces.
  *
  * GENERATED FILE - DO NOT EDIT BY HAND.
  * Written by tools\make_face_art.py from the seven pictures in assets\emotional_faces, which

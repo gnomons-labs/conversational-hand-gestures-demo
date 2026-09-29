@@ -13,10 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 
-/* was: #include "FreeRTOS.h", "task.h" and "semphr.h", for
- * SemaphoreHandle_t, xSemaphoreCreateMutex/Take/Give and vTaskDelay. This file is C and
- * includes only <stdio.h>, <string.h> and FSP headers, so the kernel header compiles here
- * and no wrapper is needed. */
+/* This file is C and includes only <stdio.h>, <string.h> and FSP headers, so the kernel header
+ * compiles here and no wrapper is needed. */
 #include <tk/tkernel.h>
 
 #include "common_util.h"
@@ -55,13 +53,11 @@ static volatile uint32_t g_receive_complete  = 0;
 /* EVERY TASK SHARES ONE CONSOLE, so all four of T_CAM, T_AI, T_UI and T_STORY reach
  * console_output_write. Without this mutex a second caller clears g_transfer_complete under
  * the first one's feet and its own write returns FSP_ERR_IN_USE. Created once in
- * console_output_init, which T_UI runs before any other task can print. A NULL handle means
- * "not created yet", and the write then goes through unlocked, which is exactly what the whole
- * file did before.
+ * console_output_init, which T_UI runs before any other task can print.
  *
- * was: static SemaphoreHandle_t g_console_mutex = NULL;
- * A micro T-Kernel mutex is an ID, and a valid ID is positive, so "not created yet" is now
- * g_console_mtx <= 0 instead of a NULL handle. Same three test sites, same meaning. */
+ * A micro T-Kernel mutex is an ID, and a valid ID is positive, so "not created yet" is
+ * g_console_mtx <= 0. The write then goes through unlocked, which is safe, because only one
+ * task is alive that early. */
 static ID g_console_mtx = 0;
 
 /* The transmit-complete flag is set by an interrupt. If that interrupt never comes the waiting
@@ -86,14 +82,12 @@ fsp_err_t console_output_init (void)
     /* The console is shared by four tasks, so it is serialised. */
     if (g_console_mtx <= 0)
     {
-        /* TA_INHERIT gives priority inheritance, which is what xSemaphoreCreateMutex() already
-         * provided - so this preserves the source behaviour rather than changing it. It is
-         * legal: tk_cre_mtx checks against VALID_MTXATR = TA_CEILING, which is the 2-bit mask
-         * 0x03, and TA_INHERIT is 0x02 (mtk3_bsp2/mtkernel/kernel/tkernel/mutex.c:211-233).
+        /* TA_INHERIT gives priority inheritance, which is what a shared console needs: the
+         * lowest-priority task must not hold the console against T_UI. It is legal:
+         * tk_cre_mtx checks against VALID_MTXATR = TA_CEILING, which is the 2-bit mask 0x03,
+         * and TA_INHERIT is 0x02 (mtk3_bsp2/mtkernel/kernel/tkernel/mutex.c:211-233).
          * ceilpri is only read when the attribute is TA_CEILING, so 0 is correct here.
-         * CNF_MAX_MTXID is 4 for this one mutex.
-         *
-         * was: g_console_mutex = xSemaphoreCreateMutex(); */
+         * CNF_MAX_MTXID is 4 for this one mutex. */
         T_CMTX cmtx = {
             .exinf   = NULL,
             .mtxatr  = TA_TFIFO | TA_INHERIT,
@@ -136,14 +130,12 @@ vision_ai_app_err_t print_to_console(char * p_data)
  *  Global API: print a line WITHOUT reporting a write failure.
  *
  *  handle_error prints its own line, and print_to_console reports a failed write back through
- *  handle_error, so the two used to be able to call each other for ever. The fork stopped that
- *  with one shared "already in here" flag, which also threw away a second task's report and
- *  was not an atomic test-and-set.
+ *  handle_error, so without care the two could call each other for ever.
  *
- *  This breaks the loop at the one place it starts instead: handle_error prints through this
- *  function, which never calls handle_error, so there is no recursion to guard and no report is
- *  ever dropped. A console write that fails while reporting another failure is simply lost -
- *  there is nowhere left to say it.
+ *  The loop is broken at the one place it starts: handle_error prints through this function,
+ *  which never calls handle_error. There is no recursion to guard and no report is ever
+ *  dropped. A console write that fails while reporting another failure is simply lost - there
+ *  is nowhere left to say it.
  *
  *  @param[IN]   p_data: the line to print
  *  @retval      None
@@ -175,9 +167,8 @@ int8_t input_from_console (void)
 
     while(key_pressed() == false)
     {
-        /* was: vTaskDelay(1) - one tick, and configTICK_RATE_HZ was 1000, so one millisecond.
-         * tk_dly_tsk takes milliseconds directly (CNF_TIMER_PERIOD is 1), so this is the same
-         * one-millisecond yield. This is the second of the two delays in this file; the other
+        /* A one-millisecond yield. tk_dly_tsk takes milliseconds directly, because
+         * CNF_TIMER_PERIOD is 1. This is the second of the two delays in this file; the other
          * is in console_output_write(). */
         (void) tk_dly_tsk((RELTIM) 1);
     }
@@ -194,11 +185,10 @@ static fsp_err_t console_output_write(const char *buffer)
 {
     fsp_err_t err = FSP_SUCCESS;
 
-    /* One writer at a time. A NULL handle means console_output_init
-     * has not run yet, and then there is only one task alive that can print. */
+    /* One writer at a time. An unset ID means console_output_init has not run yet, and then
+     * there is only one task alive that can print. */
     if (g_console_mtx > 0)
     {
-        /* was: xSemaphoreTake(g_console_mutex, portMAX_DELAY) */
         (void) tk_loc_mtx(g_console_mtx, TMO_FEVR);
     }
 
@@ -211,13 +201,11 @@ static fsp_err_t console_output_write(const char *buffer)
 
     if (FSP_SUCCESS != err)
     {
-        /* The fork's APP_ERROR_TRAP here is deleted: it is a BKPT #0, and a booth demo never
-         * stops at a breakpoint.
-         *
-         * Nothing was started, so nothing will ever set g_transfer_complete. Falling into
-         * the wait below froze the calling task for ever. The failure is not reported from
-         * here either: the caller reports it, so one failed write is not printed twice, and
-         * the quiet caller can choose not to report at all. */
+        /* NO TRAP AND NO WAIT ON THIS PATH. Nothing was started, so nothing will ever set
+         * g_transfer_complete, and falling into the wait below would freeze the calling task
+         * for ever. The failure is not reported from here either: the caller reports it, so
+         * one failed write is not printed twice, and a quiet caller can choose not to report
+         * at all. */
     }
     else
     {
@@ -225,20 +213,12 @@ static fsp_err_t console_output_write(const char *buffer)
          * not a dead task. */
         for (uint32_t waited = 0U; (0U == g_transfer_complete) && (waited < CONSOLE_TX_WAIT_MS); waited++)
         {
-            /* THIS IS NOT OPTIONAL AND THE GUARD MUST NOT COME BACK.
+            /* THIS DELAY IS NOT OPTIONAL AND MUST NOT BE GUARDED BY BSP_CFG_RTOS, which is 0
+             * in this project. An empty loop body would turn the bounded 100 ms yielding wait
+             * into a 100-iteration busy spin that expires in microseconds: every console write
+             * would time out and be aborted, and NO LINE WOULD EVER BE PRINTED.
              *
-             * was:
-             *     #if (BSP_CFG_RTOS == 2) // FreeRTOS
-             *         vTaskDelay(pdMS_TO_TICKS(1));
-             *     #endif
-             *
-             * BSP_CFG_RTOS is 0 under micro T-Kernel, so keeping the guard would leave this
-             * loop body EMPTY: the bounded 100 ms yielding wait would become a 100-iteration
-             * busy spin that expires in microseconds, every console write would time out and
-             * be aborted, and NO LINE WOULD EVER BE PRINTED.
-             *
-             * tk_dly_tsk takes milliseconds directly (CNF_TIMER_PERIOD is 1), so this is the
-             * same 1 ms yield the FreeRTOS call made. */
+             * tk_dly_tsk takes milliseconds directly, because CNF_TIMER_PERIOD is 1. */
             (void) tk_dly_tsk((RELTIM) 1);
         }
 
@@ -262,7 +242,6 @@ static fsp_err_t console_output_write(const char *buffer)
 
     if (g_console_mtx > 0)
     {
-        /* was: xSemaphoreGive(g_console_mutex) */
         (void) tk_unl_mtx(g_console_mtx);
     }
 

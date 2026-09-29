@@ -2,8 +2,7 @@
  * File Name    : conv_state.c
  * Description  : The twelve conversation states, their timers and their transitions.
  *
- * New file. Not copied from sample_code. The enum, the structure and the four public
- * signatures are in conv_state.h.
+ * The enum, the structure and the four public signatures are in conv_state.h.
  *
  * CONV_STEP IS THE ONLY PLACE A STATE CHANGES. Every change goes through conv_enter, which sets
  * entered_ms, calls gate_reset and republishes the models-on flag, so no transition can forget
@@ -262,8 +261,8 @@ void conv_force_idle(conv_ctx_t * c, uint32_t now_ms)
         return;
     }
 
-    /* SW2, the booth reset. If a story is being written it is dropped, or the next visitor would
-     * watch the last one finish. */
+    /* SW2, the demo reset. If a story is being written it is dropped, or the next visitor
+     * would watch the last one finish. */
     if (story_is_running())
     {
         story_abandon();

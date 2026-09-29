@@ -2,8 +2,6 @@
  * File Name    : story_text.c
  * Description  : The story text ring buffer. One writer (T_STORY), one reader (T_UI).
  *
- * New file. Not copied from sample_code.
- *
  * WHY THERE IS NO LOCK. There is exactly one writer and exactly one reader, and each owns one
  * index: the writer moves g_head and only reads g_tail, the reader moves g_tail and only reads
  * g_head. Both indices are single 32-bit words, so a reader can never see half of an update on

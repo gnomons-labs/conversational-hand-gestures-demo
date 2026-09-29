@@ -1,6 +1,6 @@
 /**********************************************************************************************************************
  * File Name    : art_faces.c
- * Description  : The seven whole still faces of Stage 1, as RGB565 pixels.
+ * Description  : The seven still faces, as RGB565 pixels.
  *
  * GENERATED FILE - DO NOT EDIT BY HAND.
  * Written by tools\make_face_art.py from the seven pictures in assets\emotional_faces, which
@@ -9,7 +9,7 @@
  * Seven pictures at 384 x 384 in RGB565 is 7 x 294,912 = 2,064,384 bytes, which is 49 per cent
  * of the 4,194,304 byte artwork budget.
  *
- * The attribute pair below is the one the vision fork uses for its model blobs
+ * The attribute pair below is the one the model blobs use
  * (src\hand_gestures\ruhmi_conversion_results\sub_0000_model_data.c:7), so these arrays land
  * in Octo-SPI flash and the start-up copy moves them into SDRAM.
  *********************************************************************************************************************/

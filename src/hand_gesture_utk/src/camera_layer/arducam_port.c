@@ -8,8 +8,7 @@
  * Version      : .
  * Description  : .
  *********************************************************************************************************************/
-/* was: #include <cam_thread.h>, deleted here. The "hal_data.h" line below - which this file
- * already had - declares g_cam_clk and g_cam_i2c_master now. Full note in
+/* g_cam_clk and g_cam_i2c_master are declared by the "hal_data.h" line below. Full note in
  * src\camera_layer\camera_layer.h. */
 #include <stdarg.h>
 #include "arducam.h"

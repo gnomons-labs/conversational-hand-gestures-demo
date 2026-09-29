@@ -2,15 +2,11 @@
  * File Name    : ui_screen.c
  * Description  : The whole screen: five zones, one frame per panel refresh.
  *
- * New file. It holds the seven drawing orders, the pictures, the five zones and every line of
- * text.
+ * It holds the seven drawing orders, the pictures, the five zones and every line of text.
  *
- * IT REPLACES src\display_layer\detection_screen_mipi.c, which is not copied. Two things are
- * LIFTED from it and are marked at their functions: the camera blit
- * (detection_screen_mipi.c:105-122) and the skeleton drawing (:148-194). The five-gesture fork's
- * developer overlay (:369-396) is lifted as well, because the tuning session needs it.
- * The sidebar, the static labels, the dead bounding-box code and the pipeline-time print are
- * dropped.
+ * Three things are taken from the vendor sample's own screen file and are marked at their
+ * functions: the camera blit, the skeleton drawing and the tuning overlay. The sample's sidebar,
+ * static labels, bounding-box drawing and pipeline-time print are not used here.
  *
  * TWO DRAWING RULES THAT MUST NOT BE LOST.
  *   1. d2_setalpha is GLOBAL drawing state. ui_draw_hints and ui_draw_fade both change it and
@@ -121,8 +117,8 @@
 
 /* Colours, 24-bit red-green-blue as d2_setcolor takes them. */
 #define UI_BLACK            (0x00000000)
-#define UI_SKELETON_DOT     (0x00FF0000)   /* red, as the fork draws the 21 points  */
-#define UI_SKELETON_BONE    (0x000000FF)   /* blue, as the fork draws the 23 bones  */
+#define UI_SKELETON_DOT     (0x00FF0000)   /* red, for the 21 landmark points  */
+#define UI_SKELETON_BONE    (0x000000FF)   /* blue, for the 23 bones           */
 
 /* Half brightness for a hand shape the release gate is holding shut. */
 #define UI_DIM_ALPHA        (0x80U)
@@ -134,7 +130,7 @@
 #define UI_FX(v)            ((d2_point) (((int32_t) (v)) << 4))
 #define UI_FXW(v)           ((d2_width) (((int32_t) (v)) << 4))
 
-/* The tuning overlay, lifted from the five-gesture fork (detection_screen_mipi.c:92-96). */
+/* The tuning overlay. */
 #define OVERLAY_X            (10)
 #define OVERLAY_Y            (8)
 #define OVERLAY_LINE_PITCH   (26)
@@ -220,8 +216,8 @@ static uint32_t ui_text_measure(const char * s, float scaling)
  *
  * d2_renderbox is at ra\tes\dave2d\inc\dave_driver.h:599:
  *   d2_s32 d2_renderbox(d2_device *handle, d2_point x1, d2_point y1, d2_width w, d2_width h);
- * Neither fork uses it, so the signature above is copied out of the drawing engine's own
- * header rather than guessed.
+ * The vendor sample does not use it, so the signature above is copied out of the drawing
+ * engine's own header rather than guessed.
  *********************************************************************************************************************/
 static void ui_fill_box(int x, int y, int w, int h, uint32_t colour)
 {
@@ -389,7 +385,7 @@ static const char * ui_speech(const conv_ctx_t * c, uint32_t now_ms, char * buf,
     {
         case S_BOOT:
         {
-            /* The Stage 2 banner. This build runs on micro T-Kernel 3.0, so it says so. */
+            /* The start-up banner. This build runs on micro T-Kernel 3.0, so it says so. */
             return g_artwork_ok ? UI_TXT_BANNER : UI_TXT_STORAGE_ERR;
         }
 
@@ -473,10 +469,9 @@ static const char * ui_speech(const conv_ctx_t * c, uint32_t now_ms, char * buf,
 /**********************************************************************************************************************
  * Order 1: the camera picture, zone A, 1:1.
  *
- * LIFTED FROM detection_screen_mipi.c:105-122, with one change the design orders: the fork
- * scaled the 640 x 480 picture up by CAMERA_IMAGE_SCALING (1.25) to 800 x 600, and functional
- * demo draws it at 1:1 instead, because 640 x 480 leaves the 384-pixel column for the face
- * and a 1:1 blit is the cheaper one.
+ * TAKEN FROM the vendor sample's camera blit, with one change: the sample scaled the 640 x 480
+ * picture up by CAMERA_IMAGE_SCALING (1.25) to 800 x 600, and this demo draws it at 1:1, because
+ * 640 x 480 leaves the 384-pixel column free for the face and a 1:1 blit is the cheaper one.
  *
  * The cache clean stays: the buffer is written by the camera path and read by the drawing
  * hardware, so the two must see the same bytes.
@@ -502,8 +497,8 @@ static void ui_draw_camera(void)
 /**********************************************************************************************************************
  * Order 2: the skeleton over the camera picture. Only while the models are on.
  *
- * LIFTED FROM draw_landmark_points, detection_screen_mipi.c:148-194: the same 21 dots, the same
- * 23 bones and the same connection table. Two things are dropped and one changed.
+ * TAKEN FROM the vendor sample's draw_landmark_points: the same 21 dots, the same 23 bones and
+ * the same connection table. Two things are dropped and one changed.
  *   - The scaling is gone. Landmark points are in camera pixels and the picture is now drawn at
  *     1:1, so the point coordinates are the screen coordinates.
  *   - The "Left" or "Right" label with its handedness hysteresis is dropped. It is developer
@@ -533,7 +528,7 @@ static bool ui_pt_in_zone_a(int32_t x, int32_t y)
 
 static void ui_draw_skeleton(void)
 {
-    /* The 23 bones of the hand, exactly as the fork lists them. */
+    /* The 23 bones of the hand, in the sample's own order. */
     static const uint8_t skeleton[23][2] =
     {
         {0,1},{1,2},{2,3},{3,4},         /* thumb       */
@@ -594,9 +589,8 @@ static void ui_draw_skeleton(void)
 /**********************************************************************************************************************
  * Order 3: the face, zone B.
  *
- * Stage 1: ONE WHOLE 384 x 384 PICTURE and no time argument, so this order is one blit
- * instead of three. The blink and the talking mouth come back at Stage 2, and nothing outside
- * ui_artwork.c changes when they do.
+ * ONE WHOLE 384 x 384 PICTURE and no time argument, so this order is one blit. Which picture an
+ * expression uses is ui_artwork.c's business, not this file's.
  *********************************************************************************************************************/
 static void ui_draw_face(expr_t e)
 {
@@ -708,8 +702,8 @@ static void ui_draw_story_lines(void)
  * three game-round states, because a fist is Rock there.
  *
  * WHEN THE EXTERNAL FLASH NEVER OPENED, the demo keeps running the whole conversation with
- * placeholder artwork rather than being pinned to S_IDLE, because a visitor still gets a
- * working gesture demo instead of a dead screen.
+ * placeholder artwork rather than being pinned to S_IDLE, so a visitor still gets a working
+ * gesture demo instead of a dead screen.
  * But the operator must still be able to SEE that the board is degraded, not only hear it on the
  * console and see LED3. So the degraded line lives here, in the upper half of the hint column,
  * for the whole run.
@@ -777,12 +771,11 @@ static void ui_draw_fade(const conv_ctx_t * c, uint32_t now_ms)
 /**********************************************************************************************************************
  * The developer tuning overlay, over the top-left of the camera picture. SW1 turns it on.
  *
- * LIFTED FROM the five-gesture fork, detection_screen_mipi.c:345-396 (format_ratio and
- * draw_tuning_overlay). The overlay comes across with the two drawing functions, because the
- * tuning session reads the thumb-direction sign off it.
+ * TAKEN FROM the vendor sample's format_ratio and draw_tuning_overlay. It is how the gesture
+ * limits are read off the board.
  *
  * The C library here is built without floating point in printf, so "%f" would print nothing.
- * The values are formatted by hand on integers, exactly as the fork does.
+ * The values are formatted by hand on integers.
  *********************************************************************************************************************/
 static void ui_format_ratio(char * dst, float v)
 {
@@ -831,12 +824,11 @@ static void ui_draw_tuning_overlay(void)
     print_bg_font_18(d2_handle, OVERLAY_X, y, OVERLAY_FONT_SCALING, line);
     y = (int16_t) (y + OVERLAY_LINE_PITCH);
 
-    /* THE FONT SELF TEST, added 2026-08-19 with bench fix 2.
+    /* THE FONT SELF TEST.
      *
      * Every mark this font draws by hand is shown here between two capital I's, at the SAME
-     * scaling 1.0 the story text uses. One photo of this line says whether each mark draws, so
-     * nobody has to wait for a story that happens to contain the mark they want to check. The
-     * two I's give a control glyph on each side, so a mark that draws nothing is obvious.
+     * scaling 1.0 the story text uses, so one look at this line says whether each mark draws.
+     * The two I's give a control glyph on each side, so a mark that draws nothing is obvious.
      *
      * It costs the demo nothing: the whole overlay is off until SW1 turns it on.
      *
@@ -950,15 +942,14 @@ void ui_init(void)
     g_artwork_ok = (FSP_SUCCESS == g_startup_ospi_err);
     ui_art_set_available(g_artwork_ok);
 
-    /* The tuning overlay is off at reset, as it is in the five-gesture fork. */
+    /* The tuning overlay is off at reset. */
     ui_set_overlay(false);
 }
 
 void ui_set_overlay(bool on)
 {
-    /* THE ONLY WRITER of this flag. In the fork the SW2 interrupt handler
-     * toggled it straight from the interrupt; now the button callback only reports the press and
-     * T_UI keeps the on-or-off state. */
+    /* THE ONLY WRITER of this flag. The button callback only reports the press; T_UI keeps the
+     * on-or-off state, so no interrupt writes application state. */
     g_gesture_overlay_on = on;
 }
 

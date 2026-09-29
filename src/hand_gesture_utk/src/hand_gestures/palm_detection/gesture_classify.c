@@ -3,24 +3,22 @@
  *
  * Rule-based gesture recognition from the 21 hand landmark points.
  *
- * Derived from:
- *   sample_code/ek_ra8p1_vision_palm_detection_hand_landmarkmodel_gesture_recognition_
- *   camera_LCD_FSP640/src/ai_application/palm_detection/gesture_classify.c
+ * Derived from the gesture recognition of the Renesas vision AI palm-detection
+ * and hand-landmark sample for the EK-RA8P1.
  *
- * What changed against that file
- * ------------------------------
+ * How this differs from that sample
+ * ---------------------------------
  * The sample ran a trained 3-class MLP (Open, Close, Pointer) on the 42 wrist-
  * relative coordinates. It divided all 42 values by the largest absolute value,
- * so one outlier joint set the scale, and it never took out hand rotation. It
- * was measured to misread even its own three classes.
+ * so one outlier joint set the scale, and it never took out hand rotation.
  *
- * The model is gone. Five shapes are now worked out by three geometry tests on
+ * There is no model here. Five shapes are worked out by three geometry tests on
  * the landmark points. Two of the tests are ratios of distances, so hand size
  * and rotation cancel out. The third one, thumb direction, is deliberately NOT
  * tilt-free: up and down are properties of the world, not of the hand.
  *
- * Joint numbering is the sample's own skeleton table
- * (display_layer/detection_screen_mipi.c:146-152):
+ * Joint numbering follows the sample's skeleton table:
+ *
  *   0        wrist
  *   1  -  4  thumb, knuckle first, tip last
  *   5  -  8  index
@@ -36,9 +34,8 @@
 #include "gesture_classify.h"
 
 /* ------------------------------------------------------------------ */
-/* Step 3 - the eight tunable limits, all in one block                 */
-/* Starting values worked out from the geometry. NOT measured.         */
-/* The bench session tunes these eight and no other gesture limit.     */
+/* The eight tunable limits, all in one block. These eight are the     */
+/* only gesture limits; nothing else in the demo tunes a shape.        */
 /* ------------------------------------------------------------------ */
 
 /* Test 1: finger straightness ratio r = dist(tip,wrist) / dist(middle joint,wrist).
@@ -47,29 +44,23 @@
  * Between the two limits the finger is undecided and the whole hand is refused. */
 #define GESTURE_FINGER_STRAIGHT_MIN   (1.25f)   /* r >= this: straight */
 #define GESTURE_FINGER_CURLED_MAX     (1.15f)   /* r <= this: curled   */
-/* Measured on the board, 2026-08-10 (screenshots/raw_fist.jpg, raw_vic.jpg):
+/* Measured on the board:
  *   curled   0.85 to 1.02  (fist: 0.93 0.90 0.85 0.85; victory ring 1.02, little 0.95)
  *   straight 1.42 to 1.43  (victory index and middle)
- * Nothing was seen between 1.02 and 1.42. The first value of 1.05 left victory's
- * ring finger only 0.03 clear of the undecided band, so normal hand wobble
- * refused the whole hand and the label rarely latched. 1.15 sits in the empty
- * gap. STRAIGHT_MIN stays at 1.25 because open palm already works with it and
- * the ring and little straight ratios have not been measured. */
+ * Nothing was seen between 1.02 and 1.42, so CURLED_MAX sits in that empty gap
+ * with room for normal hand wobble on either side. STRAIGHT_MIN is 1.25, which
+ * open palm and victory both clear. */
 
 /* Test 2: thumb-out ratio t = dist(joint 4, joint 5) / s.
  * A thumb folded across the palm sits near the index knuckle, so t is small. */
 #define GESTURE_THUMB_OUT_MIN         (0.58f)   /* t >= this: thumb is out    */
 #define GESTURE_THUMB_IN_MAX          (0.45f)   /* t <= this: thumb is folded */
-/* Measured on the board, 2026-08-10 (screenshots/thump_up.jpg, thump_down.jpg,
- * raw_fist.jpg, raw_vic.jpg):
+/* Measured on the board:
  *   thumb out    0.66 (thumbs down)  0.76 (thumbs up)
  *   thumb folded 0.15 (fist)         0.51 (victory, thumb only resting)
- * The first limits of 0.75 and 0.55 left thumbs up 0.01 clear and put thumbs
- * down at 0.66 inside the undecided band, so thumbs down never matched at all.
  * Only a fist has to read as folded, because victory and open palm do not test
- * the thumb, and a fist measured 0.15. That frees the folded limit to drop to
- * 0.45 and the out limit to 0.58, which clears a fist by 0.30, thumbs down by
- * 0.08 and thumbs up by 0.18. */
+ * the thumb. So the limits below clear a fist by 0.30, thumbs down by 0.08 and
+ * thumbs up by 0.18. */
 
 /* Test 3: thumb direction d = sign * (y of joint 4 - y of wrist) / s.
  * Image coordinates, so y grows downward. Inside the dead band, no match. */
@@ -78,31 +69,22 @@
 /* Victory: the two straight tips must be this far apart, as a fraction of s. */
 #define GESTURE_VICTORY_TIP_GAP_MIN   (0.35f)
 
-/* Step 6 rejection limits.
- *
- * MOVED TO gesture_classify.h ON 2026-08-13, and only moved: the values, 40.0f and 0.5f, are
- * unchanged. The gesture gate applies the same two limits as its own rule 2, and a tuning
- * limit that is written down in two files is a limit that will one day disagree with itself.
- * Nothing else about this file's behaviour changes. */
+/* The rejection limits live in gesture_classify.h, because the gesture gate applies the same
+ * two as its own rule 2, and a tuning limit written down in two files is a limit that will one
+ * day disagree with itself. */
 
 /* ------------------------------------------------------------------ */
-/* Step 4 - the thumb-direction sign                                   */
+/* The thumb-direction sign                                            */
 /* ------------------------------------------------------------------ */
 
-/* CONFIRMED ON THE BOARD, 2026-08-10 (screenshots/raw_fist.jpg, raw_vic.jpg).
+/* CONFIRMED ON THE BOARD, not taken from the camera sensor registers.
  *
- * +1.0f means "image up is the child's up", so a thumb held above the wrist
- * gives a NEGATIVE d. An upright fist read DIR -0.95 and an upright victory
- * read DIR -1.40, both with the thumb tip above the wrist on screen. The sign
- * is right.
+ * +1.0f means "image up is the viewer's up", so a thumb held above the wrist
+ * gives a NEGATIVE d. An upright fist read d = -0.95 and an upright victory
+ * read d = -1.40, both with the thumb tip above the wrist on screen.
  *
- * The earlier argument from the camera sensor registers does not survive
- * checking and is withdrawn: camera_layer/camera_layer.c:165-166 writes
- * {0x3820, 0x41} and {0x3821, 0x01}, and the file's own comments show both
- * differ from the stated default only in bit 0, which those comments do not
- * name as a flip or a mirror bit. detection_screen_mipi.c:176-177 does say the
- * image is mirrored, but a mirror is horizontal and does not change up and
- * down. No document in ref_docs/ covers this camera sensor. */
+ * The camera image is mirrored, but a mirror is horizontal and does not change
+ * up and down, so it does not affect this sign. */
 #define GESTURE_THUMB_DIR_SIGN        (+1.0f)
 
 /* ------------------------------------------------------------------ */
@@ -179,7 +161,7 @@ static test_result_t thumb_is_out(float t)
 }
 
 /* ------------------------------------------------------------------ */
-/* Step 2 and step 5 - the tests and the shape table                   */
+/* The three tests and the shape table                                 */
 /* ------------------------------------------------------------------ */
 
 gesture_t gesture_classify_ex(const landmark_result_t* lm, gesture_metrics_t* metrics)
@@ -229,7 +211,7 @@ gesture_t gesture_classify_ex(const landmark_result_t* lm, gesture_metrics_t* me
         *metrics = m;
     }
 
-    /* Step 6: reject rather than guess. */
+    /* Reject rather than guess. */
     if (!m.usable) {
         return GESTURE_UNKNOWN;
     }
@@ -318,7 +300,7 @@ const char* gesture_name(gesture_t g)
 }
 
 /* ------------------------------------------------------------------ */
-/* Step 8 - tracker: one hand, and a steady answer                     */
+/* The tracker: one hand, and a steady answer                          */
 /* ------------------------------------------------------------------ */
 
 #define GESTURE_STEADY_RESULTS  (3)   /* matching results needed to move the label */

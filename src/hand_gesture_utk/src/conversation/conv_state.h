@@ -2,8 +2,6 @@
  * File Name    : conv_state.h
  * Description  : The twelve conversation states, their timers and their transitions.
  *
- * New file. Not copied from sample_code.
- *
  * conv_state.c holds the bodies. The header exists first because the four tasks are written
  * against it.
  *
@@ -61,7 +59,7 @@ extern "C" {
 void         conv_init(conv_ctx_t * c, uint32_t now_ms);
 void         conv_step(conv_ctx_t * c, gesture_t accepted, uint32_t now_ms);
 conv_state_t conv_state(const conv_ctx_t * c);
-void         conv_force_idle(conv_ctx_t * c, uint32_t now_ms);   /* SW2, the booth reset */
+void         conv_force_idle(conv_ctx_t * c, uint32_t now_ms);   /* SW2, the demo reset */
 
 /**********************************************************************************************************************
  * The models-on flag, published by T_UI and read by T_CAM and T_AI.
@@ -81,11 +79,11 @@ void conv_publish_models_on(bool on);
 /**********************************************************************************************************************
  * True when SHOW A FIST TO SAY BYE belongs on the lower half of the hint column in this state.
  *
- * Added 2026-08-13, when ui_screen.c was written. The rule is one column of the state table in
- * conv_state.c - on in S_IDLE and the four question states, off in all three game-round states
- * because a fist is Rock there. The screen needs the answer, and the alternative was a second
- * copy of that column in ui_screen.c, which is how two tables come to disagree later. This is a
- * reader over the one table, not a new rule.
+ * The rule is one column of the state table in conv_state.c - on in S_IDLE and the four
+ * question states, off in all three game-round states because a fist is Rock there. The screen
+ * needs the answer, and the alternative was a second copy of that column in ui_screen.c, which
+ * is how two tables come to disagree later. This is a reader over the one table, not a new
+ * rule.
  *********************************************************************************************************************/
 bool conv_quit_hint(const conv_ctx_t * c);
 

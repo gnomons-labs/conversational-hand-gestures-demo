@@ -2,10 +2,9 @@
  * File Name    : story_api.h
  * Description  : The small interface T_UI uses to start, watch and stop a story.
  *
- * New file. Not copied from sample_code. The bodies of the four signatures below live in
- * src\tasks\task_story.c and in the edited story generator
- * (src\story\llm_model\llama4micro.cpp, where the fork's run_model() is split into a load that
- * happens once and a story that happens per request).
+ * The bodies of the four signatures below live in src\tasks\task_story.c and in the story
+ * generator, src\story\llm_model\llama4micro.cpp, where the model load happens once and a
+ * story happens per request.
  *
  * This header exists before its bodies because T_UI and T_STORY are written against it.
  *********************************************************************************************************************/
@@ -40,7 +39,7 @@ void story_init(void);
  * It returns whether the request was taken. A request is REFUSED when the story feature is
  * off, or when the story before it has not finished unwinding - abandoning a story only sets a
  * wish, and T_STORY is the lowest priority task in the demo, so both the 15-second story stall
- * and the SW2 booth reset leave a window where a new request cannot be met. A caller that
+ * and the SW2 demo reset leave a window where a new request cannot be met. A caller that
  * ignores the answer sends the child to an empty text area.
  *
  * @param[in] prompt_index  0 to STORY_PROMPT_COUNT - 1
@@ -52,8 +51,7 @@ bool story_start(uint8_t prompt_index);
  * T_STORY, once per request: write one story. Slow - it returns only when the story is
  * finished or abandoned. Every piece of text goes to the ring buffer and to the console.
  *
- * The story fork's run_model() is split, and its TellStory() becomes this function. Its body
- * lives with the generator, in src\story\llm_model\llama4micro.cpp.
+ * The body lives with the generator, in src\story\llm_model\llama4micro.cpp.
  *
  * @param[in] prompt_index  0 to STORY_PROMPT_COUNT - 1
  *********************************************************************************************************************/

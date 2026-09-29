@@ -111,12 +111,10 @@ uint32_t TimeCounter_ConvertFromMsToFps(uint32_t ms)
 {
     /* ZERO IS CHECKED, before dividing.
      *
-     * The fork divided without looking. A frame that takes less than one whole millisecond
-     * rounds to 0 here, and 1000 / 0 is undefined: on this core an integer divide by zero can
-     * trap, and a booth demo must never stop. Zero milliseconds also has no honest frames per
-     * second answer, so 0 is returned and the caller simply prints 0.
-     *
-     * Nothing else in this file changed. */
+     * A frame that takes less than one whole millisecond rounds to 0 here, and 1000 / 0 is
+     * undefined: on this core an integer divide by zero can trap, and the demo must not stop.
+     * Zero milliseconds also has no honest frames-per-second answer, so 0 is returned and the
+     * caller simply prints 0. */
     if (0U == ms)
     {
         return 0U;

@@ -2,9 +2,9 @@
  * File Name    : ui_screen.h
  * Description  : The whole screen: five zones, one frame per panel refresh.
  *
- * New file. It replaces the vision fork's src\display_layer\detection_screen_mipi.c, which is
- * not copied: the camera blit and the skeleton drawing are lifted out of it, and the sidebar,
- * the static labels, the dead bounding-box code and the pipeline-time print are dropped.
+ * It is the demo's only screen file. The camera blit and the skeleton drawing are taken from the
+ * vendor sample's own screen file; the sample's sidebar, static labels, bounding-box drawing and
+ * pipeline-time print are not used here.
  *
  * THIS IS THE HEADER ONLY. The bodies are in ui_screen.c. The header exists first because T_UI
  * is written against it.

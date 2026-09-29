@@ -2,8 +2,6 @@
  * File Name    : story_text.h
  * Description  : The story text ring buffer. One writer (T_STORY), one reader (T_UI).
  *
- * New file. Not copied from sample_code.
- *
  * The buffer is in on-chip SRAM and both ends are the CPU, so it needs no cache maintenance.
  *
  * story_text.c holds the bodies.

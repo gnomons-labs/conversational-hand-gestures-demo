@@ -8,9 +8,8 @@
  * Version      : .
  * Description  : The palm detection screen display on mipi lcd.
  *
- * Derived from:
- *   sample_code/ek_ra8p1_vision_palm_detection_hand_landmarkmodel_gesture_recognition_
- *   camera_LCD_FSP640/src/display_layer/detection_screen_mipi.c
+ * Derived from the screen file of the Renesas vision AI palm-detection and hand-landmark sample
+ * for the EK-RA8P1.
  *
  * Changed against that file:
  *   The gesture label no longer latches. The sample wrote

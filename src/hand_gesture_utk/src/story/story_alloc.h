@@ -2,13 +2,8 @@
  * File Name    : story_alloc.h
  * Description  : Allocation wrappers for the story generator.
  *
- * New file. Not copied from sample_code. The Stage 1 bodies do what the story fork
- * (output_code\ra8p1_llm_ospi_hs\src\ai_demo\llama4micro.cpp:83-132) already did
- * inline: pvPortMalloc, vPortFree, and pvPortMalloc plus memset.
- *
- * Stage 1 (FreeRTOS): pvPortMalloc / vPortFree / pvPortMalloc + memset.
- * Stage 2 (micro T-Kernel): the kernel memory-pool calls.
- * Only this file and story_alloc.c change between the two stages.
+ * The story generator allocates only through these three calls, and they are the only story
+ * code that names the memory pool. story_alloc.c holds the bodies.
  *********************************************************************************************************************/
 
 #ifndef STORY_ALLOC_H_
@@ -36,8 +31,8 @@ void story_free(void * p);
 bool story_alloc_failed(void);
 
 /* Latch a failed check inside the story model and name it on the console, once. The story
- * feature is disabled with the failing check named. Called from the generator in place of the
- * forked exit(EXIT_FAILURE) calls.
+ * feature is then disabled with the failing check named. Called from the generator wherever a
+ * model check fails, so that no check can stop the task.
  * @param[in] why  one short upper-case name, no line ending */
 void story_model_fail(const char * why);
 

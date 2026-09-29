@@ -2,19 +2,17 @@
  * File Name    : task_ui.c
  * Description  : T_UI - the conversation state machine and one screen frame per panel refresh.
  *
- * New file. It holds the start-up order, the wait table, the once-per-frame observed-bit pass
- * and the conversation step.
+ * It holds the start-up order, the wait table, the once-per-frame observed-bit pass and the
+ * conversation step.
  *
- * DERIVED FROM: the start-up half of output_code\hand_gesture_five\src\
- * camera_display_thread_entry.c:89-133 (console, buttons, MIPI_IF_EN, frame buffers, drawing
- * engine, panel), which moves out of the camera task and into this one. The drawing itself is
- * NOT here: it is ui_screen.c, which replaces the fork's
- * src\display_layer\detection_screen_mipi.c.
+ * The start-up of the console, the buttons, MIPI_IF_EN, the frame buffers, the drawing engine
+ * and the panel all happen here rather than in the camera task. The drawing itself is NOT here:
+ * it is src\display_layer\ui_screen.c.
  *
- * Stage 1 shape: entry function of the configurator Thread object "ui_thread", FreeRTOS
- * priority 2, stack 8,192 bytes. T_UI is NOT the first thread the scheduler runs - T_CAM is,
- * because it has the highest priority - but it is first in the order of application work,
- * because the other three tasks wait on EV_INIT_DISPLAY, which only T_UI can set.
+ * T_UI runs at itskpri 7 with an 8,192-byte stack. Both are set in src\app_main.c. T_UI is NOT
+ * the first task the kernel runs - T_CAM is, because it has the highest priority - but it is
+ * first in the order of application work, because the other three tasks wait on
+ * EV_INIT_DISPLAY, which only T_UI can set.
  *********************************************************************************************************************/
 
 #include <stdio.h>
@@ -93,8 +91,8 @@ static void     ui_drain_story_text(void);
  * THE WRAP, STATED CORRECTLY. This value is timer_count / 10, so it does NOT wrap at 2^32: it
  * climbs to 429,496,729 and then drops to 0 when the 32-bit hardware count wraps. Differences
  * taken across that one moment are nonsense, not a small number. It costs a state timeout or a
- * gate timer being wrong once. It is about 4.97 days of unbroken running away, which no booth
- * session reaches, so it is left as it is and written down rather than fixed.
+ * gate timer being wrong once, about 4.97 days into an unbroken run. No demo session reaches
+ * that, so it is written down here rather than worked around.
  *********************************************************************************************************************/
 static uint32_t ui_now_ms(void)
 {
@@ -144,7 +142,7 @@ static void ui_startup(void)
         ERROR_INDICATE_LED_ON;
     }
 
-    /* 4. The two buttons. SW1 is the tuning overlay, SW2 is the booth reset. */
+    /* 4. The two buttons. SW1 is the tuning overlay, SW2 is the demo reset. */
     fsp_status = external_irq_configure();
 
     if (FSP_SUCCESS != fsp_status)
@@ -158,9 +156,9 @@ static void ui_startup(void)
     /* 6. Both frame buffers to black, so an unpainted zone has no rubbish in it. */
     display_image_buffer_initialize();
 
-    /* 7. The two-dimensional drawing engine. The fork ignores this result; it is checked here,
-     *    and drw_init itself now checks d2_opendevice and d2_inithw. Both are APP_FATAL, so
-     *    handle_error does not return from here. */
+    /* 7. The two-dimensional drawing engine. This result IS checked, and drw_init itself checks
+     *    d2_opendevice and d2_inithw. Both are APP_FATAL, so handle_error does not return from
+     *    here. */
     fsp_status = drw_init();
 
     if (FSP_SUCCESS != fsp_status)
@@ -178,18 +176,13 @@ static void ui_startup(void)
 
     /* 9. Let the panel settle before the first picture is shown.
      *
-     *    NO MIPI DSI BACKLIGHT COMMAND IS NEEDED AND NONE EXISTS. This was settled on
-     *    2026-08-14. mipi_dsi_enable_backlight() is not a function this project has; the only
-     *    copies of it are commented out in the vendor sample and in the fork
-     *    output_code\hand_gesture_five, not here. The 120-vsync counter that used to wrap the
-     *    call is deleted as dead code.
+     *    NO MIPI DSI BACKLIGHT COMMAND IS NEEDED AND NONE EXISTS. mipi_dsi_enable_backlight()
+     *    is not a function this project has.
      *
      *    THE BACKLIGHT IS STILL DRIVEN, BY A PIN. display_init(), called at step 8 just above,
-     *    writes LCD_BLEN high at src\display_layer\display_layer.c:103, on the last line of
-     *    that function (it was :98 before the bench fix 1 comment block moved it). That is what
-     *    lights the panel. DO NOT REMOVE THAT LINE: an earlier wording here said there was no
-     *    backlight call to make at all, which read as if display_layer.c:98 were dead and
-     *    invited someone to delete it and get a dark panel. */
+     *    writes LCD_BLEN high on the last line of that function, in
+     *    src\display_layer\display_layer.c. That is what lights the panel, so DO NOT REMOVE
+     *    THAT LINE. */
     R_BSP_SoftwareDelay(200, BSP_DELAY_UNITS_MILLISECONDS);
 
     ui_init();
@@ -205,7 +198,7 @@ static void ui_startup(void)
  *********************************************************************************************************************/
 static void ui_handle_observed(app_sig_bits_t seen, uint32_t now_ms)
 {
-    /* The booth reset. Checked first, so a press always wins over whatever else arrived in the
+    /* The demo reset. Checked first, so a press always wins over whatever else arrived in the
      * same frame. */
     if (0U != (seen & EV_BTN2))
     {
@@ -293,8 +286,9 @@ void ui_thread_entry(INT stacd, void * exinf)
 
         /* One panel refresh. Cleared by the wait, because only T_UI reads it.
          *
-         * BENCH FIX 2026-08-14, THE SCREEN FLICKER. The bit is ALSO cleared at the end of the
-         * previous frame, inside graphics_swap_buffer (src\display_layer\display_layer.c), at the
+         * IT IS ALSO CLEARED ELSEWHERE, AND THAT IS WHAT KEEPS THE SCREEN FROM FLICKERING: at
+         * the end of the previous frame, inside graphics_swap_buffer
+         * (src\display_layer\display_layer.c), at the
          * moment the finished buffer is offered to the graphics controller. Without that, a line
          * detect that arrived while this task was drawing releases this wait at once, a second
          * frame is offered inside the same refresh, the controller refuses it, and the frame
@@ -316,7 +310,7 @@ void ui_thread_entry(INT stacd, void * exinf)
         /* The once-per-frame observed-bit pass. Clear exactly the bits
          * that were seen, never the whole UI_OBSERVED mask: a bit that arrives between the
          * wait returning and this clear was not in `seen`, so it is not lost - T_UI sees it on
-         * the next frame. And at Stage 1 the bits themselves are passed, never their
+         * the next frame. app_sig_clear always takes the bits to clear, never their
          * complement. */
         seen = pattern & UI_OBSERVED;
 

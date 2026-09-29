@@ -340,27 +340,13 @@ static void      ov5640_stream_on(void);
 static void      ov5640_stream_off(void);
 FSP_CPP_FOOTER
 
-/* THE SOFTWARE DELAY MACRO.
+/* THE SOFTWARE DELAY MACRO. IT MUST YIELD, NOT BUSY-WAIT.
  *
- * was:
- *     #if (BSP_CFG_RTOS == 0) // Non RTOS
- *     #define SOFTWARE_DELAY_MS(x)  R_BSP_SoftwareDelay(x, BSP_DELAY_UNITS_MILLISECONDS)
- *     #elif (BSP_CFG_RTOS == 2) // FreeRTOS
- *     #define SOFTWARE_DELAY_MS(x)  vTaskDelay(pdTICKS_TO_MS(x))
- *     #endif
+ * R_BSP_SoftwareDelay() is a busy wait, and this macro is used with 100 ms, 40 ms, 10 ms and
+ * 5 ms during camera start-up, while T_CAM is the HIGHEST-priority task. A busy wait here would
+ * block T_AI, T_UI and T_STORY for about 160 ms at boot.
  *
- * BSP_CFG_RTOS is 0 under micro T-Kernel, so leaving this alone would silently select the
- * FIRST branch - R_BSP_SoftwareDelay, a BUSY WAIT. This macro is used with 100 ms, 40 ms,
- * 10 ms and 5 ms during camera start-up, and T_CAM is the HIGHEST-priority task at that
- * point, so a busy wait here would block T_AI, T_UI and T_STORY for about 160 ms at boot
- * where today it yields. That is a behaviour change, and it is avoidable.
- *
- * app_os_delay_ms() wraps tk_dly_tsk(), which yields exactly as vTaskDelay() did.
- *
- * NOTE ON THE OLD NAME: the FreeRTOS branch said pdTICKS_TO_MS where it meant pdMS_TO_TICKS.
- * At configTICK_RATE_HZ 1000 the two were numerically identical, so it never misbehaved. The
- * wrong name disappears here as a side effect of replacing the whole macro - it is NOT being
- * fixed as a bug, because a port does not fix source bugs. */
+ * app_os_delay_ms() wraps tk_dly_tsk(), so the calling task sleeps and the others run. */
 #define SOFTWARE_DELAY_MS(x)  app_os_delay_ms((uint32_t)(x))
 
 fsp_err_t camera_init (bool use_test_mode)
@@ -646,9 +632,8 @@ void cam_vin_callback(capture_callback_args_t *p_args)
 /**********************************************************************************************************************
  * MIPI Camera Serial Interface events.
  *
- * The vision fork left this callback empty, so a loose camera cable was invisible. It now
- * counts one number per event source, and the console print them every 100 events. Nothing
- * is printed from inside the interrupt.
+ * The callback counts one number per event source, and the console prints them every 100
+ * events, so a loose camera cable is visible. Nothing is printed from inside the interrupt.
  *
  * The five sources are the Flexible Software Package's own mipi_csi_event_t values
  * (ra\fsp\inc\api\r_mipi_csi_api.h): frame data, data lane, virtual channel, power and the

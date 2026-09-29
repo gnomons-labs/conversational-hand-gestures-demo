@@ -22,9 +22,8 @@
  * Macro definitions
  ***************************************************************************************************************************/
 
-/* THE BREAKPOINT IS GONE. A booth demo never stops at a breakpoint. The vision sample ended
- * handle_error with BKPT #0, which without a debugger attached is a dead board in front of a
- * visitor. handle_error now prints, lights LED3 and RETURNS an action. */
+/* THERE IS NO BREAKPOINT IN THE ERROR PATH. A demo running unattended must not stop.
+ * handle_error prints, lights LED3 and RETURNS an action, so every caller can degrade. */
 
 /***************************************************************************************************************************
  * Typedef definitions
@@ -40,9 +39,8 @@ processinf_time_info_t application_processing_time;
 
 /* Gesture tuning overlay on or off. Off at reset.
  *
- * ONE WRITER, AND IT IS NOT AN INTERRUPT ANY MORE. The five-gesture fork toggled this straight
- * from the SW2 interrupt. Both buttons are event bits now, so the SW1 bit reaches T_UI, which
- * calls ui_set_overlay, which is the only place this is written. */
+ * ONE WRITER, AND IT IS NOT AN INTERRUPT. Both buttons are event bits, so the SW1 bit reaches
+ * T_UI, which calls ui_set_overlay, and that is the only place this is written. */
 volatile bool g_gesture_overlay_on = false;
 
 /***********************************************************************************************************************
@@ -57,13 +55,9 @@ volatile bool g_gesture_overlay_on = false;
   **********************************************************************************************************************/
 int e_printf(const char *format, ...)
 {
-    /* THE ONLY COMPILER WARNING IN THIS PROJECT'S OWN CODE, from the 2026-08-14 build log:
-     * "format string is not a string literal (potentially insecure) [-Wformat-security]".
-     * It was not only a warning. The fork wrote sprintf(sprintf_buffer, format), which THREW
-     * THE VARIADIC ARGUMENTS AWAY - a "%d" in the format read whatever happened to be in the
-     * argument registers - and sprintf has no length limit, so a long line ran past the end of
-     * the 1,024-byte buffer. vsnprintf fixes both: the arguments are passed on, and the length
-     * is bounded. */
+    /* vsnprintf, NOT sprintf. The variadic arguments have to be passed on, otherwise a "%d" in
+     * the format reads whatever happens to be in the argument registers, and the length has to
+     * be bounded to the 1,024-byte buffer. */
     va_list args;
     int     written;
 
@@ -79,13 +73,11 @@ int e_printf(const char *format, ...)
 /**********************************************************************************************************************
  * One failure, one console line, one action.
  *
- * WHAT CHANGED AGAINST THE VISION FORK. The fork's handle_error ended in BKPT #0, which without
- * a debugger attached is a dead board in front of a visitor, and it returned nothing, so no
- * caller could degrade. It is replaced by this: print, light LED3, return an action. The long
- * switch of one sprintf per code becomes the table below, so a new code is one row.
+ * Print, light LED3, return an action, so every caller can degrade instead of stopping. The
+ * table below holds one row per error code, so adding a code is adding a row.
  *
- * THE MESSAGES ARE THE FORK'S OWN WORDS, shortened. They are console text, not screen text, so
- * the plain upper-case ASCII rule for screen text does not apply to them.
+ * THE MESSAGES ARE CONSOLE TEXT, not screen text, so the plain upper-case ASCII rule for screen
+ * text does not apply to them.
  *********************************************************************************************************************/
 
 typedef struct st_app_err_row
@@ -127,7 +119,7 @@ static const app_err_row_t g_app_err_rows[] =
     { VISION_AI_APP_ERR_CONSOLE_WRITE,      APP_OK,               "console write returned error"       },
     { VISION_AI_APP_ERR_CONSOLE_READ,       APP_OK,               "console read returned error"        },
     /* NOT NAMED IN THE FAILURE TABLE. Losing the two buttons costs the tuning overlay and the
-     * booth reset. A visitor uses neither, so the demo carries on. */
+     * demo reset. A visitor uses neither, so the demo carries on. */
     { VISION_AI_APP_ERR_EXTERNAL_IRQ_INIT,  APP_OK,               "external IRQ init returned error"   },
     { VISION_AI_APP_ERR_OSPI_OPEN,          APP_DEGRADE_EXTERNAL, "Octo-SPI open failed at reset"      },
     { VISION_AI_APP_ERR_OSPI_HS_SWITCH,     APP_DEGRADE_STORY,    "Octo-SPI high-speed switch failed"  },
@@ -233,14 +225,13 @@ fsp_err_t external_irq_configure(void)
 /**********************************************************************************************************************
  * User button SW1.
  *
- * Was a DISPLAY_PAUSE toggle; now it sets EV_BTN1. T_UI turns that bit into the gesture
- * tuning overlay.
+ * It sets EV_BTN1. T_UI turns that bit into the gesture tuning overlay.
  *
- * THIS EDIT CLOSES A LIVE BIT COLLISION, and that is why it could not wait. The sample's
- * DISPLAY_PAUSE is (1 << 15) and the demo's EV_STORY_START is the same value, so while this
- * handler still set DISPLAY_PAUSE a press of SW1 released T_STORY and looked like a request for
- * a story. The toggle itself is gone as well: a press now reports a press, and T_UI keeps the
- * on-or-off state, in ui_set_overlay.
+ * IT MUST NOT SET DISPLAY_PAUSE. That name is (1 << 15), the same value as EV_STORY_START, so
+ * setting it would release T_STORY and read as a request for a story.
+ *
+ * A press reports a press, and nothing more: T_UI keeps the on-or-off state, in
+ * ui_set_overlay.
  *********************************************************************************************************************/
 void external_irq_sw1_cb(external_irq_callback_args_t *p_args)
 {
@@ -250,13 +241,12 @@ void external_irq_sw1_cb(external_irq_callback_args_t *p_args)
 }
 
 /**********************************************************************************************************************
- * User button SW2 - the booth reset.
+ * User button SW2 - the demo reset.
  *
- * Was empty; now it sets EV_BTN2. T_UI calls conv_force_idle on it.
+ * It sets EV_BTN2. T_UI calls conv_force_idle on it.
  *
- * The five-gesture fork toggled g_gesture_overlay_on straight from this interrupt. That job
- * moves to SW1 and to T_UI, so the overlay flag now has exactly one writer, in ui_screen.c, and
- * no interrupt writes application state any more.
+ * No interrupt writes application state. The overlay flag has exactly one writer, in
+ * ui_screen.c.
  *********************************************************************************************************************/
 void external_irq_sw2_cb(external_irq_callback_args_t *p_args)
 {

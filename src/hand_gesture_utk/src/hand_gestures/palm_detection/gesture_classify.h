@@ -3,12 +3,11 @@
  *
  * Rule-based gesture recognition from the 21 hand landmark points.
  *
- * Derived from:
- *   sample_code/ek_ra8p1_vision_palm_detection_hand_landmarkmodel_gesture_recognition_
- *   camera_LCD_FSP640/src/ai_application/palm_detection/gesture_classify.h
+ * Derived from the gesture recognition of the Renesas vision AI palm-detection
+ * and hand-landmark sample for the EK-RA8P1.
  *
- * The sample used a trained 3-class MLP (Open, Close, Pointer). That model is
- * dropped. Five shapes are now worked out by geometry on the landmark points:
+ * The sample used a trained 3-class MLP (Open, Close, Pointer). There is no
+ * model here. Five shapes are worked out by geometry on the landmark points:
  * open palm, thumbs up, thumbs down, fist, victory.
  */
 #ifndef GESTURE_CLASSIFY_H_
@@ -35,21 +34,19 @@ typedef enum {
 
 /* The two quality limits a result must pass before any shape rule looks at it.
  *
- * These lived in gesture_classify.c until 2026-08-13 and were moved here unchanged, because
- * the gesture gate applies the same two as its own rule 2 and adds no third test of its own.
- * One place, one value each. */
+ * They live in this header, not in gesture_classify.c, because the gesture gate applies the
+ * same two as its own rule 2 and adds no third test of its own. One place, one value each. */
 #define GESTURE_MIN_PALM_PIXELS       (40.0f)   /* smallest usable palm length s */
 #define GESTURE_MIN_LANDMARK_SCORE    (0.5f)    /* landmark score floor          */
 
-/* Live values of the three geometry tests, for the tuning overlay (step 9).
+/* Live values of the three geometry tests, for the tuning overlay.
  * Filled on every call to gesture_classify_ex, even when the answer is
- * GESTURE_UNKNOWN, so the bench session can see why a shape was refused.
+ * GESTURE_UNKNOWN, so the overlay can show why a shape was refused.
  *
- * `u` is a MEASUREMENT ONLY. No shape rule reads it. It exists to settle the
- * open fist-versus-thumbs-up question: if a fist held with the thumb alongside
- * the hand reaches the thumb-out limit, the second test that separates the two
- * is "the thumb tip must sit clearly above the index knuckle", and this is the
- * number that test would use. Read it on the bench before adding any rule. */
+ * `u` is a MEASUREMENT ONLY. No shape rule reads it. It is there for the case
+ * where a fist held with the thumb alongside the hand reaches the thumb-out
+ * limit: the test that would separate the two is "the thumb tip must sit clearly
+ * above the index knuckle", and `u` is the number such a test would use. */
 typedef struct {
     float r_index;      /* finger straightness ratio, index finger  */
     float r_middle;     /* finger straightness ratio, middle finger */
@@ -63,10 +60,9 @@ typedef struct {
     bool  usable;       /* true when 21 points, score and palm length all passed */
 } gesture_metrics_t;
 
-/* `hand_score` was added on 2026-08-13. The gesture gate takes a landmark score, and this
- * file is the only place that has one: it is copied straight out of landmark_result_t.hand_score
- * (landmark_postprocess.h). Nothing was removed or renamed, and no existing behaviour changed,
- * so every earlier caller keeps working. It is 0 whenever the metrics are zeroed. */
+/* `hand_score` is for the gesture gate, which needs a landmark score and has no other source
+ * for one. It is copied straight out of landmark_result_t.hand_score (landmark_postprocess.h),
+ * and it is 0 whenever the metrics are zeroed. */
 
 /**
  * Work out the gesture of one hand from its landmark points.

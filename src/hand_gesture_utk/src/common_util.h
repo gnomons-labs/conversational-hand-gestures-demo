@@ -76,41 +76,27 @@
 /* Demo event bits. Every bit is passed to the app_sig_* functions of src\app_signal.h and to
  * nothing else.
  *
- * The values keep the vision fork's numbering above wherever a bit means the same thing, so a
- * reader who knows the sample recognises them.
+ * The values keep the numbering of the Renesas vision AI sample above wherever a bit means the
+ * same thing, so a reader who knows that sample recognises them.
  *
- * A FreeRTOS event group has only 24 usable bits: the top eight are control bits
- * (ra\aws\FreeRTOS\FreeRTOS\Source\include\event_groups.h, eventEVENT_BITS_CONTROL_BYTES =
- * 0xff000000) and xEventGroupWaitBits asserts if any of them is asked for. NO BIT MAY EVER BE
- * ADDED ABOVE (1 << 23). The highest used here is EV_BTN2 = (1 << 19), so four are spare.
+ * NO BIT MAY EVER BE ADDED ABOVE (1 << 23). The highest used here is EV_BTN2 = (1 << 19), so
+ * four are spare.
  *
- * THE BIT COLLISION IS CLOSED (2026-08-13, in the two button callbacks). Two of the old sample
- * names share a value with a new one:
+ * TWO OF THE SAMPLE'S OWN NAMES SHARE A VALUE WITH A DEMO BIT:
  *   DISPLAY_PAUSE             (1 << 15) == EV_STORY_START
  *   CAMERA_AUTO_FOCUS_EXECUTE (1 << 16) == EV_STORY_TEXT
- * The one that could fire was the sample's SW1 handler in common_util.c: it SET DISPLAY_PAUSE,
- * so a press of SW1 released T_STORY and read as a request for a story. That handler now sets
- * EV_BTN1 (1 << 18). CAMERA_AUTO_FOCUS_EXECUTE never had a writer or a reader in this project.
- *
- * NOTHING SETS EITHER OLD NAME ANY MORE. One read is left, in
- * src\display_layer\detection_screen_mipi.c, and that file is dropped from the build:
- * ui_screen.c replaces it, and no task calls it once the two old thread-entry files leave the
- * build. The two old names stay defined only so those three unreplaced files still compile
- * until they are excluded.
- *
- * The old names below (1 << 0) to (1 << 14) alias the EV_INIT_* and camera bits in the same
- * way, and the last writers of those are src\ai_inference_thread_entry.c and
- * src\camera_display_thread_entry.c. BOTH MUST BE EXCLUDED FROM THE BUILD before the demo is
- * run, or two sets of code will drive one event group.
+ * Nothing in the demo sets either old name, and nothing may start to: setting DISPLAY_PAUSE
+ * would release T_STORY and read as a request for a story. The SW1 handler in common_util.c
+ * sets EV_BTN1 (1 << 18) instead. The old names below, (1 << 0) to (1 << 16), alias the
+ * EV_INIT_* and camera bits in the same way, and are kept defined for the sample's own files.
  */
 #define EV_INIT_DISPLAY     (1U << 0)   /* set by T_UI,    read by T_CAM, T_AI, T_STORY. Sticky */
 #define EV_INIT_CAMERA      (1U << 1)   /* set by T_CAM,   read by T_AI.                Sticky  */
 #define EV_INIT_NPU         (1U << 2)   /* set by T_AI,    read by T_UI.                Sticky  */
 #define EV_INIT_STORY       (1U << 3)   /* set by T_STORY, read by T_UI.                Sticky  */
 /* EV_VSYNC HAS TWO CLEAR SITES, NOT ONE. Besides the wait in task_ui.c, graphics_swap_buffer
- * clears it again at the buffer change - bench fix 2026-08-14, see
- * src\display_layer\display_layer.c. The fix works because the two sites agree, so do not
- * treat the wait as the only owner of this bit. */
+ * clears it again at the buffer change - see src\display_layer\display_layer.c. This works
+ * because the two sites agree, so do not treat the wait as the only owner of this bit. */
 #define EV_VSYNC            (1U << 10)  /* graphics line-detect callback -> T_UI. Cleared by the wait
                                          * AND by graphics_swap_buffer; see the note above       */
 #define EV_CAM_FRAME        (1U << 12)  /* video-input callback -> T_CAM.         Cleared by the wait  */
@@ -185,10 +171,9 @@ typedef enum e_vision_ai_app_err
     VISION_AI_APP_ERR_CONSOLE_READ       = 21, ///< JLink console read failed
     VISION_AI_APP_ERR_EXTERNAL_IRQ_INIT  = 22, ///< External IRQ init failed
 
-    /* Ten codes appended for the merged demo. Codes 0 to 22 above are the vision fork's own
-     * and are unchanged, so every existing call site still compiles. These are application
-     * names, not Flexible Software Package names, so nothing outside this project has to
-     * supply them. */
+    /* Ten codes appended for this demo. Codes 0 to 22 above come from the Renesas vision AI
+     * sample and are unchanged. These are application names, not Flexible Software Package
+     * names, so nothing outside this project has to supply them. */
     VISION_AI_APP_ERR_OSPI_OPEN          = 23, ///< ospi_b_init failed in the warm-start hook
     VISION_AI_APP_ERR_OSPI_HS_SWITCH     = 24, ///< ospi_b_set_protocol_to_opi failed
     VISION_AI_APP_ERR_STORY_MODEL_HEADER = 25, ///< story model header check failed
@@ -204,8 +189,8 @@ typedef enum e_vision_ai_app_err
 /**********************************************************************************************************************
  * What the demo does about a failure.
  *
- * THE RULE: a booth demo never stops at a breakpoint. handle_error prints the code and the
- * place, lights LED3 and returns one of these. APP_FATAL is the only value that stops the
+ * THE RULE: the demo never stops at a breakpoint. handle_error prints the code and the place,
+ * lights LED3 and returns one of these. APP_FATAL is the only value that stops the
  * caller, and it stops in a slow blink loop with the message already on the console.
  *********************************************************************************************************************/
 typedef enum e_app_action

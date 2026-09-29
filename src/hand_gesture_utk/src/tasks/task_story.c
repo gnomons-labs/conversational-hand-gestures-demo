@@ -2,20 +2,16 @@
  * File Name    : task_story.c
  * Description  : T_STORY - load the model once, then write one story per request.
  *
- * New file.
+ * The run_model() call chain of the story generator is split here into story_init() and
+ * story_run(). The application heap the generator allocates from is not here: it belongs with
+ * the heap itself, in src\app_pool.c.
  *
- * DERIVED FROM: output_code\ra8p1_llm_ospi_hs\src\new_thread0_entry.c, which this file
- * replaces. Two things are lifted out of it: the run_model() call chain, which is split here
- * into story_init() and story_run(), and the FreeRTOS heap array ucHeap - and ucHeap is NOT
- * here, because at Stage 1 the heap is a configurator property and an application-allocated
- * array. That array belongs with the heap decision, not with this task.
+ * The story generator itself is src\story\llm_model\llama4micro.cpp and llama2.h. This file
+ * only drives it.
  *
- * The story generator itself is untouched work: src\story\llm_model\llama4micro.cpp and
- * llama2.h. This file only drives it.
- *
- * Stage 1 shape: entry function of the configurator Thread object "story_thread", FreeRTOS
- * priority 1, the lowest of the four, stack 16,384 bytes. Lowest on purpose: the camera, the
- * models and the screen must all stay ahead of the story.
+ * T_STORY runs at itskpri 12, the lowest of the four, with a 16,384-byte stack. Both are set in
+ * src\app_main.c. Lowest on purpose: the camera, the models and the screen must all stay ahead
+ * of the story.
  *********************************************************************************************************************/
 
 #include <stdio.h>
@@ -83,12 +79,11 @@ static void story_disable(const char * why)
 
 bool story_start(uint8_t prompt_index)
 {
-    /* This used to return void, so a refused request looked exactly like an accepted one and
-     * the state machine walked into S_STORY_GEN with an empty text area. The refusal is real:
-     * story_abandon() only sets a wish, and T_STORY - the lowest priority task in the demo -
-     * stays inside story_run() until its token loop sees it, so both the 15-second story
-     * stall and the SW2 booth reset can leave a story still unwinding while the child asks
-     * for the next one. */
+    /* THE REFUSAL IS REAL AND THE CALLER MUST READ IT, or the state machine walks into
+     * S_STORY_GEN with an empty text area. story_abandon() only sets a wish, and T_STORY - the
+     * lowest priority task in the demo - stays inside story_run() until its token loop sees it,
+     * so both the 15-second story stall and the SW2 demo reset can leave a story still unwinding
+     * while the child asks for the next one. */
     if (g_story_disabled || g_story_running)
     {
         return false;
@@ -181,9 +176,9 @@ void story_thread_entry(INT stacd, void * exinf)
              * only place the model header is checked, which is the byte-order net. */
             story_init();
 
-            /* story_init() RETURNS when a check inside the model fails, instead of spinning
-             * inside the fork's exit() stub. Both latches are read here, and the model check
-             * is named first because it is the byte-order net. */
+            /* story_init() RETURNS when a check inside the model fails; it never spins. Both
+             * latches are read here, and the model check is named first because it is the
+             * byte-order net. */
             if (story_model_failed())
             {
                 (void) handle_error(VISION_AI_APP_ERR_STORY_MODEL_HEADER, "T_STORY story_init");
