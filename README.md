@@ -35,3 +35,6 @@ The four tasks coordinate through a single µT-Kernel event flag carrying only r
 A child can greet the device, play a round of rock-paper-scissors against it, or have it tell a short AI-generated story, with the animated face reacting to mimic real conversational turn-taking rather than a single command triggering a single response.
 
 > 📘 **New to this demo? Start with the [User Manual](user-manual.md).** It walks through board setup, switch/jumper settings, building and downloading the project, and how to run and troubleshoot the demo.
+
+## Third-Party Software
+This demo builds on µT-Kernel 3.0, llama2.c, Arm and Renesas/EdgeCortix sample code, and SEGGER RTT. See [THIRD_PARTY.md](THIRD_PARTY.md) for the name, rights holder, source, role and license of each.
